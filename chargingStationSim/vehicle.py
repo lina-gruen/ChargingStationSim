@@ -45,6 +45,12 @@ class Vehicle:
         self.wait_time = None
         # self.max_pow = params['max_pow']
 
+    def get_soc(self):
+        """"
+        Returns the current SOC of the vehicle.
+        """
+        return self.soc
+
     def new_demand(self, new_dist, rest):
         """
         Calculate the new demand of kWh the vehicle has for its next trip.
