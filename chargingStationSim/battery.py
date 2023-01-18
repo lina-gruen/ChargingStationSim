@@ -24,6 +24,12 @@ class Battery:
         self.soc = soc
         # self.max_pow = max_pow
 
+    def get_soc(self):
+        """
+        Returns the current SOC of the battery.
+        """
+        return self.soc
+
     def recharge(self, available):
         """
         Recharge the battery a certain amount.
@@ -35,7 +41,7 @@ class Battery:
         """
         if available < 0:
             raise ValueError('Battery was given negative amount of kWh.')
-        new_soc = self.soc + (available / self.capacity)
+        new_soc = self.soc + (available / self.capacity)*100
         if new_soc > 100:
             self.soc = 100
         else:
@@ -52,7 +58,7 @@ class Battery:
         """
         if demand < 0:
             raise ValueError('Demanded negative amount of kWh from battery.')
-        new_soc = self.soc - (demand / self.capacity)
+        new_soc = self.soc - (demand / self.capacity)*100
         if new_soc < 0:
             self.soc = 0
         else:
