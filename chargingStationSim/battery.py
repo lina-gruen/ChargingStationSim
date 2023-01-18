@@ -8,16 +8,21 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 class Battery:
     """
-    Class for a local battery pack at a station.
+    Class for a local battery pack.
     """
 
-    def __init__(self, capacity, max_pow, soc):
+    def __init__(self, capacity, soc):
         """
-
+        Parameters
+        ----------
+        capacity: int
+            Max kWh rating of the battery.
+        soc: int
+            State of Charge of the battery.
         """
         self.capacity = capacity
-        self.max_pow = max_pow
         self.soc = soc
+        # self.max_pow = max_pow
 
     def recharge(self, available):
         """
