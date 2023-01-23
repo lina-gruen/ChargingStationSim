@@ -38,27 +38,69 @@ class Vehicle:
         self.weight_class = params['weight_class']
         self.dist_type = params['dist_type']
         self.capacity = params['capacity']
-        self.efficiency = params['efficiency']
         self.drive_dist = params['drive_dist']
         self.soc = params['soc']
+        if params['efficiency'] is None:
+            self.efficiency = 5
+        else:
+            self.efficiency = params['efficiency']
         self.demand = None
-        self.wait_time = None
+        self.charge = False
+        # self.wait_time = None
         # self.max_pow = params['max_pow']
 
     def get_soc(self):
-        """"
-        Returns the current SOC of the vehicle.
+        """
+        Return the current SOC of the vehicle.
         """
         return self.soc
+
+    def update_soc(self):
+        """
+
+        """
+        if ... < 0:
+            raise ValueError('Vehicle was given negative amount of kWh.')
+        new_soc = self.soc + (... / self.capacity) * 100
+        if new_soc > 100:
+            self.soc = 100
+        else:
+            self.soc = new_soc
+            self.charge = False
+
+    def find_charger(self, charge_list):
+        """
+        Uses charger if one is free, else waits until one becomes free.
+
+        Parameters
+        ----------
+        charge_list: list
+            list of bools telling which chargers are occupied.
+        """
+        if charge_list:
+            self.charge = True
+            self.new_demand()
+            self.update_soc()
+        else:
+            pass
+
+    def check_vehicle(self):
+        """
+        Check which action to take for a vehicle.
+        """
+        if self.charge:
+            self.update_soc()
+        elif self.driving == 0:
+            self.find_charger()
+        else:
+            self.driving -= 1
 
     def new_demand(self, new_dist, rest):
         """
         Calculate the new demand of kWh the vehicle has for its next trip.
         """
-        if rest:
-            self.wait_time = 90
-        else:
-            self.demand = self.default_eff / new_dist
+        pass
+        # self.demand = self.default_params['efficiency'] / new_dist
 
     def charge_vehicle(self, power):
         """
