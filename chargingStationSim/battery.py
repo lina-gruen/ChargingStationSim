@@ -5,24 +5,31 @@ This file contains the Battery class
 
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
+from mesa import Agent
 
-class Battery:
+
+class Battery(Agent):
     """
     Class for a local battery pack.
     """
 
-    def __init__(self, capacity, soc):
+    def __init__(self, battery_id, station, capacity, soc):
+        super().__init__(battery_id, station)
         """
         Parameters
         ----------
+        battery_id: int
+            Unique id for the battery.
+        station: mesa.model
+            Instance of the station that contains the battery.
         capacity: int
             Max kWh rating of the battery.
         soc: int
             State of Charge of the battery.
         """
+        self.id = battery_id
         self.capacity = capacity
         self.soc = soc
-        # self.max_pow = max_pow
 
     def get_soc(self):
         """
@@ -45,7 +52,7 @@ class Battery:
         if new_soc > 100:
             self.soc = 100
         else:
-            self.soc = new_soc
+            self.soc = round(new_soc, 2)
 
     def discharge(self, demand):
         """
@@ -62,4 +69,12 @@ class Battery:
         if new_soc < 0:
             self.soc = 0
         else:
-            self.soc = new_soc
+            self.soc = round(new_soc, 2)
+
+    def step(self):
+        """
+        Battery actions to execute for each iteration of a simulation.
+        """
+        print(f'Battery id: {self.id}, soc: {self.soc}')
+        self.discharge(50)
+        print(f'Battery id: {self.id}, soc: {self.soc}')
