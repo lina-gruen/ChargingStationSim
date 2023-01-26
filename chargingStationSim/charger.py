@@ -11,8 +11,10 @@ class Charger:
     Class for a charger.
     """
 
-    def __init__(self):
+    def __init__(self, charger_id):
         """
 
         """
-        self.occupied = False
+        self.available = True
+        self.id = charger_id
+
