@@ -20,9 +20,11 @@ class Station(Model):
     vehicle_params = {'weight_class': None, 'dist_type': None, 'capacity': 150, 'efficiency': 5,
                       'drive_dist': 10}
 
-    def __init__(self, num_vehicle, num_battery, num_charger):
+    def __init__(self, num_vehicle, num_battery, num_charger, time_step):
         super().__init__()
         self.schedule = BaseScheduler(self)
+        # Time that passes for each iteration.
+        self.time_step = time_step
 
         for num in range(num_vehicle):
             obj = Vehicle(num, self, self.vehicle_params, 10)
