@@ -158,5 +158,9 @@ class Vehicle(Agent):
         if self.charging:
             self.update_soc()
 
-        print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc} '
-              f'\n----------------------------------------')
+        if self.charging:
+            print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc} '
+                  f'\n----------------------------------------')
+        else:
+            print(f'Vehicle id: {self.id}, Charger id: None, soc: {self.soc} '
+                  f'\n----------------------------------------')
