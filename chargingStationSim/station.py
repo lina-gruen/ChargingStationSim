@@ -10,6 +10,7 @@ from chargingStationSim.charger import Charger
 from chargingStationSim.vehicle import Vehicle
 from mesa import Model
 from mesa.time import BaseScheduler
+from mesa.time import StagedActivation
 
 
 class Station(Model):
@@ -22,7 +23,13 @@ class Station(Model):
 
     def __init__(self, num_vehicle, num_battery, num_charger, time_step):
         super().__init__()
-        self.schedule = BaseScheduler(self)
+        # self.schedule = BaseScheduler(self)
+
+        # Make a scheduler that splits each iteration into two steps
+        vehicle_steps = ['step_1', 'step_2']
+        self.schedule = StagedActivation(model=self, stage_list=vehicle_steps,
+                                         shuffle=False, shuffle_between_stages=False)
+
         # Time that passes for each iteration.
         self.time_step = time_step
 
@@ -46,6 +53,4 @@ class Station(Model):
 
 
 if __name__ == '__main__':
-    model = Station(6, 1, 4)
-    model.step()
-
+    pass
