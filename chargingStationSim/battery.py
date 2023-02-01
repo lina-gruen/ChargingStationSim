@@ -71,10 +71,17 @@ class Battery(Agent):
         else:
             self.soc = round(new_soc, 2)
 
-    def step(self):
+    def step_1(self):
         """
-        Battery actions to execute for each iteration of a simulation.
+        Battery actions to execute for the first stage of each iteration of a simulation.
         """
-        print(f'Battery id: {self.id}, soc: {self.soc}')
-        self.discharge(50)
-        print(f'Battery id: {self.id}, soc: {self.soc}')
+        pass
+
+    def step_2(self):
+        """
+        Battery actions to execute for the second stage of each iteration of a simulation.
+        """
+        pass
+        # print(f'Battery id: {self.id}, soc: {self.soc}')
+        # self.discharge(50)
+        # print(f'Battery id: {self.id}, soc: {self.soc}')
