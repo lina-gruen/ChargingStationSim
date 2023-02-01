@@ -89,15 +89,6 @@ class Vehicle(Agent):
         Må finne ut hvor mye demand tilsvarer driving til neste kjøretur.
         '''
 
-    # def check_power(self):
-    #    """
-    #    Check is the power output of the charger has changed since the last step.
-    #    """
-    #    if self.power == self.charger.power:
-    #        pass
-    #    else:
-    #        self.power = self.charger.power
-
     def update_soc(self):
         """
         Update the soc of the vehicle when charging.
@@ -148,12 +139,6 @@ class Vehicle(Agent):
             self.find_charger()
         else:
             self.driving -= 1
-
-    # def charge_vehicle(self, power):
-    #    """
-    #    Charge the vehicle by a certain amount.
-    #    """
-    #    pass
 
     def step_1(self):
         """
