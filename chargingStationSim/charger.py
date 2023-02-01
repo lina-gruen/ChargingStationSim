@@ -20,27 +20,33 @@ class Charger:
         """
         self.id = charger_id
         self.available = True
-        self.num = 0
+        self.num_users = 0
+        self.num_sockets = 4
         self.power = 350
+        self.socket_power = 0
 
-    def new_request(self):
+    def update_power(self):
         """
-        Add a new vehicle to the charger and update the maximum power delivered to each power outlet in use.
+        Update and return the maximum power delivered to each charging socket in use.
+        """
+        self.socket_power = self.power / self.num_users
+
+    def add_vehicle(self):
+        """
+        Add a new vehicle to the charger.
 
         Returns
         -------
         maximum power for each power outlet.
         """
-        self.num += 1
-        if self.num == 4:
+        self.num_users += 1
+        if self.num_users == self.num_sockets:
             self.available = False
-        self.power = 350 / self.num
-        return self.power
 
     def remove_vehicle(self):
         """
         Remove a vehicle from the charger.
         """
-        self.num -= 1
+        self.num_users -= 1
         self.available = True
 
