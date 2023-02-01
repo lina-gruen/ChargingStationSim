@@ -15,6 +15,7 @@ class Vehicle(Agent):
 
     default_params = {'weight_class': None, 'dist_type': None, 'capacity': None, 'efficiency': None,
                       'drive_dist': None}
+
     # resolution = 600  # 10min
 
     def __init__(self, vehicle_id, station, params, soc):
@@ -59,8 +60,10 @@ class Vehicle(Agent):
         self.demand = 0
         # number of iterations the vehicle will be driving.
         self.driving = 0
+        '''
         # The power the vehicle is currently charging with.
         self.power = 0
+        '''
         # The charger the vehicle is using. None if not charging.
         self.charger = None
         # If the vehicle is charging or not.
@@ -81,32 +84,45 @@ class Vehicle(Agent):
         """
         route_len = 75
         self.demand = route_len / self.efficiency
-        # target_soc enten 100 eller utifra demand, utifra om det er lokal eller langdistanse.
+        # self.driving = ...
+        '''
+        Må finne ut hvor mye demand tilsvarer driving til neste kjøretur.
+        '''
 
-    def check_power(self):
-        """
-        Check is the power output of the charger has changed since the last step.
-        """
-        if self.power == self.charger.power:
-            pass
-        else:
-            self.power = self.charger.power
+    # def check_power(self):
+    #    """
+    #    Check is the power output of the charger has changed since the last step.
+    #    """
+    #    if self.power == self.charger.power:
+    #        pass
+    #    else:
+    #        self.power = self.charger.power
 
     def update_soc(self):
         """
         Update the soc of the vehicle when charging.
         """
-        # target soc for charging the total kWh demand.
+
+        '''
+        target soc for charging the total kWh demand (enten 100 eller utifra demand, utifra
+        om det er lokal eller langdistanse.)
         # target_soc = self.soc + (self.demand / self.capacity) * 100
-        # how many kWh can be charged per iteration with current power.
-        iter_demand = self.power * (self.time / 60)
-        new_soc = self.soc + (iter_demand / self.capacity) * 100
+        '''
+
+        # how many kWh can be charged per iteration step with current power.
+        step_demand = self.charger.socket_power * (self.time / 60)
+        '''
+        Sjå om ein faktisk trenge å oppdatere iter_demand hver runde. if self.power == self.charger.socket_power: pass
+        '''
+        new_soc = self.soc + (step_demand / self.capacity) * 100
         if new_soc >= 100:
             self.soc = 100
+            self.charging = False
             self.charger.remove_vehicle()
+            self.charger = None
+            # self.driving = ... ?
         else:
             self.soc = round(new_soc, 2)
-            self.charging = False
 
     def find_charger(self):
         """
@@ -114,34 +130,48 @@ class Vehicle(Agent):
         """
         for charger in self.station.charge_list:
             if charger.available:
-                self.charger = charger
                 self.charging = True
-                self.power = charger.new_request()
+                self.charger = charger
+                self.charger.add_vehicle()
                 self.new_demand()
-                self.update_soc()
                 break
+            else:
+                pass
 
     def check_vehicle(self):
         """
         Check which action to take for a vehicle.
         """
         if self.charging:
-            self.update_soc()
+            pass
         elif self.driving == 0:
             self.find_charger()
         else:
             self.driving -= 1
 
-    def charge_vehicle(self, power):
-        """
-        Charge the vehicle by a certain amount.
-        """
-        pass
+    # def charge_vehicle(self, power):
+    #    """
+    #    Charge the vehicle by a certain amount.
+    #    """
+    #    pass
 
-    def step(self):
+    def step_1(self):
         """
-        Vehicle actions to execute for each iteration of a simulation.
+        Vehicle actions to execute for the first stage of each iteration of a simulation.
         """
-        print(f'Vehicle id: {self.id}, soc: {self.soc}')
         self.check_vehicle()
-        print(f'Vehicle id: {self.id}, soc: {self.soc}')
+
+    def step_2(self):
+        """
+        Vehicle actions to execute for the second stage of each iteration of a simulation.
+        """
+        print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc}')
+
+        for charger in self.station.charge_list:
+            if charger.num_users != 0:
+                charger.update_power()
+        if self.charging:
+            self.update_soc()
+
+        print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc} '
+              f'\n----------------------------------------')
