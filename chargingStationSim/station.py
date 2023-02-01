@@ -18,8 +18,7 @@ class Station(Model):
     Class for a charging station.
     """
 
-    vehicle_params = {'weight_class': None, 'dist_type': None, 'capacity': 150, 'efficiency': 5,
-                      'drive_dist': 10}
+    vehicle_params = {'weight_class': None, 'dist_type': None, 'capacity': 150, 'efficiency': 5}
 
     def __init__(self, num_vehicle, num_battery, num_charger, time_step):
         super().__init__()
