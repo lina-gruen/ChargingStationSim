@@ -10,4 +10,8 @@ from chargingStationSim.station import Station
 
 # Start a simulation.
 model = Station(num_vehicle=6, num_battery=1, num_charger=2, time_step=15)
-model.step()
+
+# run multiple steps.
+for _ in range(8):
+    model.step()
+
