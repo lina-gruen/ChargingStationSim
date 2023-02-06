@@ -37,7 +37,7 @@ class Vehicle(Agent):
                 capacity: int
                     Max kWh rating of the vehicle battery.
                 efficiency: int
-                    Efficiency of the battery measured in km/kWh.
+                    Efficiency of the battery measured in kWh/km.
         soc: int
             State of Charge of the vehicle battery.
         """
@@ -79,7 +79,7 @@ class Vehicle(Agent):
         trip, depending on the length of the new route.
         """
         route_len = 75
-        self.demand = route_len / self.efficiency
+        self.demand = route_len * self.efficiency
         # self.driving = ...
         '''
         Må finne ut hvor mye demand tilsvarer driving til neste kjøretur.
