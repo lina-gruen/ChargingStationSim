@@ -8,57 +8,48 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 from chargingStationSim.battery import Battery
 from chargingStationSim.charger import Charger
 from chargingStationSim.vehicle import Vehicle
+from mesa import Model
+from mesa.time import BaseScheduler
+from mesa.time import StagedActivation
 
 
-class Station:
+class Station(Model):
     """
     Class for a charging station.
     """
 
-    vehicle_params = {'weight_class': None, 'dist_type': None, 'capacity': 150, 'efficiency': 5,
-                      'drive_dist': 10, 'soc': 100}
+    vehicle_params = {'weight_class': None, 'dist_type': None, 'capacity': 150, 'efficiency': 1.5}
 
-    def __init__(self):
-        """
+    def __init__(self, num_vehicle, num_battery, num_charger, time_step):
+        super().__init__()
+        # self.schedule = BaseScheduler(self)
 
-        """
-        self.batteries = []
-        self.chargers = []
-        self.vehicles = []
+        # Make a scheduler that splits each iteration into two steps
+        vehicle_steps = ['step_1', 'step_2']
+        self.schedule = StagedActivation(model=self, stage_list=vehicle_steps,
+                                         shuffle=False, shuffle_between_stages=False)
 
-    def add_battery(self, capacity=150, soc=100):
-        """
-        Add a battery pack to the station.
-        """
-        self.batteries.append(Battery(capacity, soc))
+        # Time that passes for each iteration.
+        self.time_step = time_step
 
-    def add_charger(self):
-        """
-        Add a charger to the station.
-        """
-        self.chargers.append(Charger())
+        for num in range(num_vehicle):
+            obj = Vehicle(num, self, self.vehicle_params, 10)
+            self.schedule.add(obj)
 
-    def add_vehicle(self, vehicle_params=vehicle_params):
-        """
-        Add a vehicle to the station.
-        """
-        self.vehicles.append(Vehicle(vehicle_params))
+        for num in range(num_battery):
+            obj = Battery(num + num_vehicle, self, 150, 100)
+            self.schedule.add(obj)
 
-    def charge(self):
-        for vehicle in self.vehicles:
-            for charger in self.chargers:
-                if not charger.occupied:
-                    vehicle.charge_vehicle()
-                else:
-                    pass
+        # List to contain all chargers at the station.
+        self.charge_list = [Charger(num) for num in range(num_charger)]
+
+    def step(self):
+        """
+        Actions to execute for each iteration of a simulation.
+        """
+        # Iterate through all agents (vehicles, batteries) in the model.
+        self.schedule.step()
 
 
 if __name__ == '__main__':
-    station = Station()
-    station.add_battery(150, 100)
-    station.add_charger()
-    station.add_vehicle()
-    print(station.batteries[0].get_soc())
-    station.batteries[0].discharge(50)
-    print(station.batteries[0].get_soc())
-
+    pass
