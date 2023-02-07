@@ -17,7 +17,7 @@ class Vehicle(Agent):
 
     # resolution = 600  # 10min
 
-    def __init__(self, vehicle_id, station, params, soc):
+    def __init__(self, vehicle_id, station, params, soc, arrival):
         super().__init__(vehicle_id, station)
         """
         Parameters
@@ -51,7 +51,10 @@ class Vehicle(Agent):
             self.efficiency = 5
         else:
             self.efficiency = params['efficiency']
+        # Start soc.
         self.soc = soc
+        # First iteration where the vehicle arrives at a charging station.
+        self.arrival = arrival
         # kWh needed for the vehicle.
         self.demand = 0
         # if the vehicle is driving (True) or not (False).
@@ -165,12 +168,12 @@ class Vehicle(Agent):
         if self.charging:
             self.update_soc()
 
-        if self.charging:
-            print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc} '
-                  f'\n----------------------------------------')
-        elif self.driving:
-            print(f'Vehicle id: {self.id}, Driving: True, soc: {self.soc} '
-                  f'\n----------------------------------------')
-        else:
-            print(f'Vehicle id: {self.id}, Waiting: True, soc: {self.soc} '
-                  f'\n----------------------------------------')
+        # if self.charging:
+        #     print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc} '
+        #           f'\n----------------------------------------')
+        # elif self.driving:
+        #     print(f'Vehicle id: {self.id}, Driving: True, soc: {self.soc} '
+        #           f'\n----------------------------------------')
+        # else:
+        #     print(f'Vehicle id: {self.id}, Waiting: True, soc: {self.soc} '
+        #           f'\n----------------------------------------')
