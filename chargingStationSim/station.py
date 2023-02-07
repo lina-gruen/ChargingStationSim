@@ -11,6 +11,7 @@ from chargingStationSim.vehicle import Vehicle
 from mesa import Model
 from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
+from mesa.datacollection import DataCollector
 
 
 class Station(Model):
@@ -29,11 +30,13 @@ class Station(Model):
         self.schedule = StagedActivation(model=self, stage_list=vehicle_steps,
                                          shuffle=False, shuffle_between_stages=False)
 
-        # Time that passes for each iteration.
+        # Time that passes for each step.
         self.time_step = time_step
+        # Duration for a simulation.
+        # self.sim_time = sim_time
 
         for num in range(num_vehicle):
-            obj = Vehicle(num, self, self.vehicle_params, 10)
+            obj = Vehicle(num, self, self.vehicle_params, 10, 1)
             self.schedule.add(obj)
 
         for num in range(num_battery):
@@ -43,10 +46,19 @@ class Station(Model):
         # List to contain all chargers at the station.
         self.charge_list = [Charger(num) for num in range(num_charger)]
 
+        # Data collector for model and agent variables.
+        self.datacollector = DataCollector(
+            model_reporters=None, agent_reporters={"Soc": "soc"}
+        )
+
+    def time_to_iteration(self):
+        pass
+
     def step(self):
         """
         Actions to execute for each iteration of a simulation.
         """
+        self.datacollector.collect(self)
         # Iterate through all agents (vehicles, batteries) in the model.
         self.schedule.step()
 
