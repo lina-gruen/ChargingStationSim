@@ -12,6 +12,7 @@ from mesa import Model
 from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
 from mesa.datacollection import DataCollector
+import random
 
 
 class Station(Model):
@@ -29,30 +30,33 @@ class Station(Model):
         vehicle_steps = ['step_1', 'step_2']
         self.schedule = StagedActivation(model=self, stage_list=vehicle_steps,
                                          shuffle=False, shuffle_between_stages=False)
-
-        # Time that passes for each step.
+        # Variable to stop simulation if set to False.
+        self.running = True
+        # Time that passes for each step in hours.
         self.time_step = time_step
         # Duration for a simulation.
         # self.sim_time = sim_time
 
         for num in range(num_vehicle):
-            obj = Vehicle(num, self, self.vehicle_params, 10, 1)
+            '''
+            Finne starts soc.
+            '''
+            arrival_hour = random.randint(0, 23)
+            arrival_step = random.randint((arrival_hour * self.time_step) + 1, (arrival_hour + 1) * self.time_step)
+            obj = Vehicle(vehicle_id=num, station=self, params=self.vehicle_params, soc=10, arrival=arrival_step)
             self.schedule.add(obj)
 
         for num in range(num_battery):
-            obj = Battery(num + num_vehicle, self, 150, 100)
+            obj = Battery(battery_id=num + num_vehicle, station=self, capacity=150, soc=100)
             self.schedule.add(obj)
 
         # List to contain all chargers at the station.
-        self.charge_list = [Charger(num) for num in range(num_charger)]
+        self.charge_list = [Charger(charger_id=num, power=350, num_sockets=4) for num in range(num_charger)]
 
         # Data collector for model and agent variables.
         self.datacollector = DataCollector(
-            model_reporters=None, agent_reporters={"Soc": "soc"}
+            model_reporters=None, agent_reporters={'Soc': 'soc', 'Arrival': 'arrival'}
         )
-
-    def time_to_iteration(self):
-        pass
 
     def step(self):
         """
