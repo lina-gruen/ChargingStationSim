@@ -11,7 +11,7 @@ class Charger:
     Class for a charger.
     """
 
-    def __init__(self, charger_id):
+    def __init__(self, charger_id, power, num_sockets):
         """
         Parameters
         ----------
@@ -21,8 +21,8 @@ class Charger:
         self.id = charger_id
         self.available = True
         self.num_users = 0
-        self.num_sockets = 4
-        self.power = 350
+        self.num_sockets = num_sockets
+        self.power = power
         self.socket_power = 0
 
     def update_power(self):
