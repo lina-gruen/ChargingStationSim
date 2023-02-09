@@ -15,8 +15,6 @@ class Vehicle(Agent):
 
     default_params = {'weight_class': None, 'dist_type': None, 'capacity': None, 'efficiency': None}
 
-    # resolution = 600  # 10min
-
     def __init__(self, vehicle_id, station, params, soc, arrival):
         super().__init__(vehicle_id, station)
         """
@@ -53,12 +51,10 @@ class Vehicle(Agent):
             self.efficiency = params['efficiency']
         # Start soc.
         self.soc = soc
-        # First iteration where the vehicle arrives at a charging station.
+        # Iteration at which the vehicle first arrives at a charging station.
         self.arrival = arrival
         # kWh needed for the vehicle.
         self.demand = 0
-        # if the vehicle is driving (True) or not (False).
-        self.driving = False
         '''
         # The power the vehicle is currently charging with.
         self.power = 0
@@ -67,7 +63,10 @@ class Vehicle(Agent):
         self.charger = None
         # If the vehicle is charging (True) or not (False).
         self.charging = False
-        # self.wait_time = None
+        # if the vehicle is driving (True) or not (False).
+        self.driving = False
+        # If the vehicle is waiting to charge (True) or not (False).
+        self.waiting = False
         # self.max_pow = params['max_pow']
 
     def get_soc(self):
@@ -90,7 +89,7 @@ class Vehicle(Agent):
 
     def drive(self):
         """
-
+        Update the soc of the vehicle when driving.
         """
         speed = 60  # km/h
         driving_demand = (self.efficiency * speed * self.time) / 60
@@ -98,6 +97,7 @@ class Vehicle(Agent):
         if new_soc <= 0:
             self.soc = 0
             self.driving = False
+            self.waiting = True
         else:
             self.soc = round(new_soc, 2)
 
@@ -131,6 +131,7 @@ class Vehicle(Agent):
         """
         for charger in self.station.charge_list:
             if charger.available:
+                self.waiting = False
                 self.charging = True
                 self.charger = charger
                 self.charger.add_vehicle()
@@ -145,10 +146,12 @@ class Vehicle(Agent):
         """
         if self.charging:
             pass
-        elif not self.driving:
-            self.find_charger()
-        else:
+        elif self.driving:
             self.drive()
+        elif self.waiting:
+            self.find_charger()
+        elif self.arrival == self.station.schedule.steps:
+            self.find_charger()
 
     def step_1(self):
         """
