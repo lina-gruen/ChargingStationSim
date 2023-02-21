@@ -59,21 +59,11 @@ class Vehicle(Agent):
         # The power the vehicle is currently charging with.
         self.power = 0
         '''
+        # Current state of the vehicle.
+        self.state = {'charging': False, 'driving': False, 'waiting': False}
         # The charger the vehicle is using. None if not charging.
         self.charger = None
-        # If the vehicle is charging (True) or not (False).
-        self.charging = False
-        # if the vehicle is driving (True) or not (False).
-        self.driving = False
-        # If the vehicle is waiting to charge (True) or not (False).
-        self.waiting = False
         # self.max_pow = params['max_pow']
-
-    def get_soc(self):
-        """
-        Return the current SOC of the vehicle.
-        """
-        return self.soc
 
     def new_demand(self):
         """
@@ -96,8 +86,8 @@ class Vehicle(Agent):
         new_soc = self.soc - (driving_demand / self.capacity) * 100
         if new_soc <= 0:
             self.soc = 0
-            self.driving = False
-            self.waiting = True
+            self.state['driving'] = False
+            self.state['waiting'] = True
         else:
             self.soc = round(new_soc, 2)
 
@@ -118,10 +108,10 @@ class Vehicle(Agent):
         new_soc = self.soc + (step_demand / self.capacity) * 100
         if new_soc >= 100:
             self.soc = 100
-            self.charging = False
+            self.state['charging'] = False
             self.charger.remove_vehicle()
             self.charger = None
-            self.driving = True
+            self.state['driving'] = True
         else:
             self.soc = round(new_soc, 2)
 
@@ -131,8 +121,8 @@ class Vehicle(Agent):
         """
         for charger in self.station.charge_list:
             if charger.available:
-                self.waiting = False
-                self.charging = True
+                self.state['waiting'] = False
+                self.state['charging'] = True
                 self.charger = charger
                 self.charger.add_vehicle()
                 self.new_demand()
@@ -144,11 +134,11 @@ class Vehicle(Agent):
         """
         Check which action to take for a vehicle.
         """
-        if self.charging:
+        if self.state['charging']:
             pass
-        elif self.driving:
+        elif self.state['driving']:
             self.drive()
-        elif self.waiting:
+        elif self.state['waiting']:
             self.find_charger()
         elif self.arrival == self.station.schedule.steps:
             self.find_charger()
@@ -168,7 +158,7 @@ class Vehicle(Agent):
         for charger in self.station.charge_list:
             if charger.num_users != 0:
                 charger.update_power()
-        if self.charging:
+        if self.state['charging']:
             self.update_soc()
 
         # if self.charging:
