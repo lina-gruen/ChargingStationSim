@@ -41,7 +41,7 @@ class Vehicle(Agent):
         """
         self.id = vehicle_id
         self.station = station
-        self.time = station.time_step  # time per iteration step in minutes
+        self.time = station.time_step  # time per iteration step in hours (decimal if resolution is less than 1 hour).
         self.weight_class = params['weight_class']
         self.dist_type = params['dist_type']
         self.capacity = params['capacity']
@@ -54,7 +54,7 @@ class Vehicle(Agent):
         # Iteration at which the vehicle first arrives at a charging station.
         self.arrival = arrival
         # kWh needed for the vehicle.
-        self.demand = 0
+        # self.demand = 0
         '''
         # The power the vehicle is currently charging with.
         self.power = 0
@@ -65,21 +65,31 @@ class Vehicle(Agent):
         self.charger = None
         # self.max_pow = params['max_pow']
 
-    def new_demand(self):
+    # def new_demand(self):
+    #    """
+    #    Calculate the new demand of kWh the vehicle needs for its next
+    #    trip, depending on the length of the new route.
+    #    """
+    #    route_len = 75
+    #    self.demand = route_len * self.efficiency
+    #    # self.driving = ...
+    #    '''
+    #    Må finne ut hvor mye demand tilsvarer driving til neste kjøretur.
+    #    '''
+
+    def arrival_soc(self):
         """
-        Calculate the new demand of kWh the vehicle needs for its next
-        trip, depending on the length of the new route.
+        Finds the soc at the vehicle's arrival from a probability distribution.
+
+        Returns
+        -------
+
         """
-        route_len = 75
-        self.demand = route_len * self.efficiency
-        # self.driving = ...
-        '''
-        Må finne ut hvor mye demand tilsvarer driving til neste kjøretur.
-        '''
+        pass
 
     def drive(self):
         """
-        Update the soc of the vehicle when driving.
+        Updates the soc of the vehicle when driving.
         """
         speed = 60  # km/h
         driving_demand = (self.efficiency * speed * self.time) / 60
@@ -93,7 +103,7 @@ class Vehicle(Agent):
 
     def update_soc(self):
         """
-        Update the soc of the vehicle when charging.
+        Updates the soc of the vehicle when charging.
         """
         '''
         target soc for charging the total kWh demand (enten 100 eller utifra demand, utifra
@@ -125,14 +135,14 @@ class Vehicle(Agent):
                 self.state['charging'] = True
                 self.charger = charger
                 self.charger.add_vehicle()
-                self.new_demand()
+                # self.new_demand()
                 break
             else:
                 pass
 
     def check_vehicle(self):
         """
-        Check which action to take for a vehicle.
+        Checks which action to take for a vehicle.
         """
         if self.state['charging']:
             pass
@@ -156,8 +166,7 @@ class Vehicle(Agent):
         # print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc}')
 
         for charger in self.station.charge_list:
-            if charger.num_users != 0:
-                charger.update_power()
+            charger.update_power()
         if self.state['charging']:
             self.update_soc()
 
