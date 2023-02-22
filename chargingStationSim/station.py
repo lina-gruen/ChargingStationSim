@@ -9,7 +9,7 @@ from chargingStationSim.battery import Battery
 from chargingStationSim.charger import Charger
 from chargingStationSim.vehicle import Vehicle
 from mesa import Model
-from mesa.time import BaseScheduler
+# from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
 from mesa.datacollection import DataCollector
 import random
@@ -24,7 +24,8 @@ class Station(Model):
 
     def __init__(self, num_vehicle, num_battery, num_charger, time_step):
         super().__init__()
-        # self.schedule = BaseScheduler(self)
+
+        # Simulation-----------------------------------------------------------------
 
         # Make a scheduler that splits each iteration into two steps
         vehicle_steps = ['step_1', 'step_2']
@@ -36,6 +37,8 @@ class Station(Model):
         self.time_step = time_step
         # Duration for a simulation.
         # self.sim_time = sim_time
+
+        # ---------------------------------------------------------------------------
 
         for num in range(num_vehicle):
             '''
@@ -55,8 +58,19 @@ class Station(Model):
 
         # Data collector for model and agent variables.
         self.datacollector = DataCollector(
-            model_reporters=None, agent_reporters={'Soc': 'soc', 'Arrival': 'arrival'}
+            model_reporters={'Power': self.get_station_power}, agent_reporters={'Soc': 'soc', 'Arrival': 'arrival'}
         )
+
+    def get_station_power(self):
+        """
+        Finds the power used for all chargers to return the total power used at the station.
+
+        Returns
+        -------
+
+        """
+        power_sum = [charger.used_power for charger in self.charge_list]
+        return sum(power_sum)
 
     def step(self):
         """
