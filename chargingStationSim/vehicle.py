@@ -6,6 +6,7 @@ The file contains the Vehicle class
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
+import random
 
 
 class Vehicle(Agent):
@@ -13,9 +14,9 @@ class Vehicle(Agent):
     Base class for all vehicles in a vehicle fleet.
     """
 
-    default_params = {'weight_class': None, 'dist_type': None, 'capacity': None, 'efficiency': None}
+    default_params = {'weight': None, 'dist_type': None, 'capacity': None, 'efficiency': None, 'max_charge': None}
 
-    def __init__(self, vehicle_id, station, params, soc, arrival):
+    def __init__(self, vehicle_id, station, params, arrival):
         super().__init__(vehicle_id, station)
         """
         Parameters
@@ -25,10 +26,9 @@ class Vehicle(Agent):
         station: mesa.model
             Instance of the station that contains the vehicle.
         params: dict
-            New parameters for the vehicle.
-            Including:
-                weight_class: string
-                    If vehicle is medium-heavy or heavy
+            Parameters for the vehicle.
+                weight: string
+                    Weight class category og the vehicle.
                 dist_type: string
                     If the vehicle is for short-distance (local) or
                     long-distance travel.
@@ -36,23 +36,22 @@ class Vehicle(Agent):
                     Max kWh rating of the vehicle battery.
                 efficiency: int
                     Efficiency of the battery measured in kWh/km.
-        soc: int
-            State of Charge of the vehicle battery.
+                max_charge: int
+                    Maximum power at which the vehicle can charge in kW.
+        arrival: int
+            Iteration at which the vehicle first arrives at a charging station.
         """
         self.id = vehicle_id
         self.station = station
         self.time = station.time_step  # time per iteration step in hours (decimal if resolution is less than 1 hour).
-        self.weight_class = params['weight_class']
+        self.weight = params['weight']
         self.dist_type = params['dist_type']
         self.capacity = params['capacity']
-        if params['efficiency'] is None:
-            self.efficiency = 5
-        else:
-            self.efficiency = params['efficiency']
-        # Start soc.
-        self.soc = soc
-        # Iteration at which the vehicle first arrives at a charging station.
+        self.efficiency = params['efficiency']
+        self.max_charge = params['max_charge']
         self.arrival = arrival
+        # State of Charge of the vehicle battery.
+        self.soc = self.get_soc()
         # kWh needed for the vehicle.
         # self.demand = 0
         '''
@@ -63,17 +62,17 @@ class Vehicle(Agent):
         self.state = {'charging': False, 'driving': False, 'waiting': False}
         # The charger the vehicle is using. None if not charging.
         self.charger = None
-        # self.max_pow = params['max_pow']
 
-    def arrival_soc(self):
+    @staticmethod
+    def get_soc():
         """
-        Finds the soc at the vehicle's arrival from a probability distribution.
+        Finds a soc for the vehicle from a probability distribution.
 
         Returns
         -------
-
+        New soc for the vehicle.
         """
-        pass
+        return random.randint(0, 90)
 
     def drive(self):
         """
@@ -154,3 +153,12 @@ class Vehicle(Agent):
             charger.update_power()
         if self.state['charging']:
             self.update_soc()
+
+
+class Group1(Vehicle):
+    """
+    Subclass for all group1 vehicles.
+    """
+
+    def __init__(self, vehicle_id, station, params, arrival):
+        super().__init__(vehicle_id, station, params, arrival)
