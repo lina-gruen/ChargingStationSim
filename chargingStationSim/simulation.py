@@ -32,22 +32,24 @@ results = batch_run(
 )
 
 # Print results from the simulation as a dataframe.
-results_df = pd.DataFrame(results)
-results_df.set_index(['Step', 'AgentID'], inplace=True)
+vehicle_df = pd.DataFrame(results)
+vehicle_df.set_index(['Step', 'AgentID'], inplace=True)
+station_df = pd.DataFrame(results)
+station_df.set_index(['Step'], inplace=True)
 
 # Find final soc of all vehicles.
-end_soc = results_df.xs(num_steps, level='Step')['Soc']
+end_soc = vehicle_df.xs(num_steps, level='Step')['Soc']
 plt.figure()
-end_soc.hist(bins=range(int(results_df.Soc.max()) + 1))
+end_soc.hist(bins=range(int(vehicle_df.Soc.max()) + 1))
 # plt.show()
 
 # Chosen arrival times for each vehicle.
-start_arrival = results_df.xs(0, level='Step')['Arrival']
-arrival = results_df.xs(1, level='AgentID')['Arrival']
+start_arrival = vehicle_df.xs(0, level='Step')['Arrival']
+arrival = vehicle_df.xs(1, level='AgentID')['Arrival']
 
 # Plot development of the soc for all vehicles.
 plt.figure()
 for vehicle in range(model_params['num_vehicle']):
-    plt.plot(results_df.xs(vehicle, level='AgentID')['Soc'], marker='o', label=f'#{vehicle} soc')
+    plt.plot(vehicle_df.xs(vehicle, level='AgentID')['Soc'], marker='o', label=f'#{vehicle} soc')
     plt.legend()
     plt.show()
