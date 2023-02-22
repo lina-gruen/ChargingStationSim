@@ -20,7 +20,7 @@ class Station(Model):
     Class for a charging station.
     """
 
-    vehicle_params = {'weight_class': None, 'dist_type': None, 'capacity': 150, 'efficiency': 1.5}
+    vehicle_params = {'weight': None, 'dist_type': None, 'capacity': 150, 'efficiency': 1.5, 'max_charge': 350}
 
     def __init__(self, num_vehicle, num_battery, num_charger, time_step):
         super().__init__()
@@ -41,12 +41,9 @@ class Station(Model):
         # ---------------------------------------------------------------------------
 
         for num in range(num_vehicle):
-            '''
-            Finne starts soc.
-            '''
             arrival_hour = random.randint(0, 23)
             arrival_step = random.randint((arrival_hour * self.time_step) + 1, (arrival_hour + 1) * self.time_step)
-            obj = Vehicle(vehicle_id=num, station=self, params=self.vehicle_params, soc=10, arrival=arrival_step)
+            obj = Vehicle(vehicle_id=num, station=self, params=self.vehicle_params, arrival=arrival_step)
             self.schedule.add(obj)
 
         for num in range(num_battery):
