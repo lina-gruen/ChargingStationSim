@@ -22,14 +22,24 @@ class Charger:
         self.available = True
         self.num_users = 0
         self.num_sockets = num_sockets
-        self.power = power
+        self.max_power = power
         self.socket_power = 0
+        self.used_power = 0
 
     def update_power(self):
         """
-        Update and return the maximum power delivered to each charging socket in use.
+        Update the power delivered to each charging socket in use and the total power delivered by the whole charger.
         """
-        self.socket_power = self.power / self.num_users
+        if self.num_users != 0:
+            self.socket_power = self.max_power / self.num_users
+        else:
+            self.socket_power = 0
+
+        # used_power == max_power when power is distributed equally between sockets in use.
+        self.used_power = self.socket_power * self.num_users
+        """
+        Prøv å få til individuell effekt på hvert uttak dersom ulike effekter er ønskelig. Liste for socket_power?
+        """
 
     def add_vehicle(self):
         """
@@ -49,4 +59,3 @@ class Charger:
         """
         self.num_users -= 1
         self.available = True
-
