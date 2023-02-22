@@ -6,9 +6,10 @@ This file contains the simulation of charging station.
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from chargingStationSim.station import Station
+from chargingStationSim.visualization import station_plot
+from chargingStationSim.visualization import vehicle_plot
 from mesa.batchrunner import batch_run
-import pandas as pd
-import matplotlib.pyplot as plt
+
 
 # Duration of simulation in hours.
 sim_time = 24
@@ -31,50 +32,6 @@ results = batch_run(
     display_progress=True,
 )
 
-
-# Station data -------------------------------------------------------------
-
-station_df = pd.DataFrame(results)
-# Convert 10 min resolution to single minutes.
-station_df['Step'] *= 10
-station_df.set_index(['Step'], inplace=True)
-
-# Development of the station power.
-plt.figure()
-plt.plot(station_df.xs('Power', axis=1))
-plt.xlabel('Time [min]')
-plt.ylabel('Power [kW]')
-plt.show()
-
-
-# Vehicle data -------------------------------------------------------------
-
-vehicle_df = pd.DataFrame(results)
-vehicle_df['Step'] *= 10
-vehicle_df.set_index(['Step', 'AgentID'], inplace=True)
-
-# Final soc of all vehicles.
-"""
-end_soc = vehicle_df.xs(num_steps, level='Step')['Soc']
-plt.figure()
-end_soc.hist(bins=range(int(vehicle_df.Soc.max()) + 1))
-plt.show()
-"""
-
-# Chosen arrival times for each vehicle.
-# xs() returns a specific section of the dataframe based on index level and row values.
-start_arrival = vehicle_df.xs(0, level='Step')['Arrival']
-plt.figure()
-start_arrival.hist(bins=range(int(vehicle_df.Arrival.max()) + 1))
-plt.xlabel('Time [min/10]')
-plt.ylabel('Number of vehicles')
-plt.show()
-
-# Development of the soc for all vehicles.
-"""
-plt.figure()
-for vehicle in range(model_params['num_vehicle']):
-    plt.plot(vehicle_df.xs(vehicle, level='AgentID')['Soc'], marker='o', label=f'#{vehicle} soc')
-    plt.legend()
-    plt.show()
-"""
+# Run functions for visualization of the simulation results.
+station_plot(results)
+vehicle_plot(results)
