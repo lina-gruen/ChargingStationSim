@@ -18,7 +18,7 @@ time_step = 10
 num_steps = int((sim_time/time_step)*60)
 
 # Set model parameters for a simulation.
-model_params = {'num_vehicle': 6, 'num_battery': 0, 'num_charger': 2, 'time_step': 60/time_step}
+model_params = {'num_vehicle': 20, 'num_battery': 0, 'num_charger': 2, 'time_step': 60/time_step}
 
 # Start a simulation.
 results = batch_run(
@@ -31,25 +31,50 @@ results = batch_run(
     display_progress=True,
 )
 
-# Print results from the simulation as a dataframe.
-vehicle_df = pd.DataFrame(results)
-vehicle_df.set_index(['Step', 'AgentID'], inplace=True)
+
+# Station data -------------------------------------------------------------
+
 station_df = pd.DataFrame(results)
+# Convert 10 min resolution to single minutes.
+station_df['Step'] *= 10
 station_df.set_index(['Step'], inplace=True)
 
-# Find final soc of all vehicles.
+# Development of the station power.
+plt.figure()
+plt.plot(station_df.xs('Power', axis=1))
+plt.xlabel('Time [min]')
+plt.ylabel('Power [kW]')
+plt.show()
+
+
+# Vehicle data -------------------------------------------------------------
+
+vehicle_df = pd.DataFrame(results)
+vehicle_df['Step'] *= 10
+vehicle_df.set_index(['Step', 'AgentID'], inplace=True)
+
+# Final soc of all vehicles.
+"""
 end_soc = vehicle_df.xs(num_steps, level='Step')['Soc']
 plt.figure()
 end_soc.hist(bins=range(int(vehicle_df.Soc.max()) + 1))
-# plt.show()
+plt.show()
+"""
 
 # Chosen arrival times for each vehicle.
+# xs() returns a specific section of the dataframe based on index level and row values.
 start_arrival = vehicle_df.xs(0, level='Step')['Arrival']
-arrival = vehicle_df.xs(1, level='AgentID')['Arrival']
+plt.figure()
+start_arrival.hist(bins=range(int(vehicle_df.Arrival.max()) + 1))
+plt.xlabel('Time [min/10]')
+plt.ylabel('Number of vehicles')
+plt.show()
 
-# Plot development of the soc for all vehicles.
+# Development of the soc for all vehicles.
+"""
 plt.figure()
 for vehicle in range(model_params['num_vehicle']):
     plt.plot(vehicle_df.xs(vehicle, level='AgentID')['Soc'], marker='o', label=f'#{vehicle} soc')
     plt.legend()
     plt.show()
+"""
