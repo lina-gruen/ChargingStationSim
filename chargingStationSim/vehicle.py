@@ -65,18 +65,6 @@ class Vehicle(Agent):
         self.charger = None
         # self.max_pow = params['max_pow']
 
-    # def new_demand(self):
-    #    """
-    #    Calculate the new demand of kWh the vehicle needs for its next
-    #    trip, depending on the length of the new route.
-    #    """
-    #    route_len = 75
-    #    self.demand = route_len * self.efficiency
-    #    # self.driving = ...
-    #    '''
-    #    Må finne ut hvor mye demand tilsvarer driving til neste kjøretur.
-    #    '''
-
     def arrival_soc(self):
         """
         Finds the soc at the vehicle's arrival from a probability distribution.
@@ -135,7 +123,6 @@ class Vehicle(Agent):
                 self.state['charging'] = True
                 self.charger = charger
                 self.charger.add_vehicle()
-                # self.new_demand()
                 break
             else:
                 pass
@@ -163,19 +150,7 @@ class Vehicle(Agent):
         """
         Vehicle actions to execute for the second stage of each iteration of a simulation.
         """
-        # print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc}')
-
         for charger in self.station.charge_list:
             charger.update_power()
         if self.state['charging']:
             self.update_soc()
-
-        # if self.charging:
-        #     print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc} '
-        #           f'\n----------------------------------------')
-        # elif self.driving:
-        #     print(f'Vehicle id: {self.id}, Driving: True, soc: {self.soc} '
-        #           f'\n----------------------------------------')
-        # else:
-        #     print(f'Vehicle id: {self.id}, Waiting: True, soc: {self.soc} '
-        #           f'\n----------------------------------------')
