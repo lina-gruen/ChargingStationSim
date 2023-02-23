@@ -13,13 +13,13 @@ class Battery(Agent):
     Class for a local battery pack.
     """
 
-    def __init__(self, battery_id, station, capacity, soc):
-        super().__init__(battery_id, station)
+    def __init__(self, unique_id, station, capacity, soc):
+        super().__init__(unique_id, station)
         """
         Parameters
         ----------
-        battery_id: int
-            Unique id for the battery.
+        unique_id: int
+            Id for the battery.
         station: mesa.model
             Instance of the station that contains the battery.
         capacity: int
@@ -27,7 +27,7 @@ class Battery(Agent):
         soc: int
             State of Charge of the battery.
         """
-        self.id = battery_id
+        self.station = station
         self.capacity = capacity
         self.soc = soc
 
@@ -82,6 +82,4 @@ class Battery(Agent):
         Battery actions to execute for the second stage of each iteration of a simulation.
         """
         pass
-        # print(f'Battery id: {self.id}, soc: {self.soc}')
-        # self.discharge(50)
-        # print(f'Battery id: {self.id}, soc: {self.soc}')
+
