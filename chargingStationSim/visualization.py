@@ -23,6 +23,8 @@ def station_plot(results):
     plt.title('Station power')
     plt.show()
 
+    return data
+
 
 def vehicle_plot(results):
     data = pd.DataFrame(results)
@@ -58,3 +60,5 @@ def vehicle_plot(results):
         plt.legend()
         plt.show()
     """
+
+    return data
