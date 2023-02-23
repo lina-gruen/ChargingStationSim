@@ -37,6 +37,8 @@ class Station(Model):
         self.time_step = time_step
         # Duration for a simulation.
         # self.sim_time = sim_time
+        # If the power of the chargers on the station have been updated. Should happen once for each step.
+        self.power_updated = False
 
         # ---------------------------------------------------------------------------
 
@@ -47,7 +49,7 @@ class Station(Model):
             self.schedule.add(obj)
 
         for num in range(num_battery):
-            obj = Battery(battery_id=num + num_vehicle, station=self, capacity=150, soc=100)
+            obj = Battery(battery_id=num_vehicle + num, station=self, capacity=150, soc=100)
             self.schedule.add(obj)
 
         # List to contain all chargers at the station.
@@ -76,6 +78,8 @@ class Station(Model):
         self.datacollector.collect(self)
         # Iterate through all agents (vehicles, batteries) in the model.
         self.schedule.step()
+        # Reset variable for the next step. Checks if the power of the chargers is updated.
+        self.power_updated = False
 
 
 if __name__ == '__main__':
