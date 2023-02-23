@@ -11,19 +11,20 @@ class Charger:
     Class for a charger.
     """
 
-    def __init__(self, charger_id, power, num_sockets):
+    def __init__(self, power, num_sockets):
         """
         Parameters
         ----------
-        charger_id: int
-            Unique id for the charger.
+        power: int
+            Total power that the charger can deliver.
+        num_sockets: int
+            Number of charging sockets on the charger.
         """
-        self.id = charger_id
         self.available = True
         self.num_users = 0
         self.num_sockets = num_sockets
         self.max_power = power
-        self.socket_power = 0
+        self.socket_power = self.max_power
         self.used_power = 0
 
     def update_power(self):
@@ -33,7 +34,7 @@ class Charger:
         if self.num_users != 0:
             self.socket_power = self.max_power / self.num_users
         else:
-            self.socket_power = 0
+            self.socket_power = self.max_power
 
         # used_power == max_power when power is distributed equally between sockets in use.
         self.used_power = self.socket_power * self.num_users
