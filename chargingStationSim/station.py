@@ -13,6 +13,7 @@ from mesa import Model
 from mesa.time import StagedActivation
 from mesa.datacollection import DataCollector
 import random
+random.seed(1234)
 
 
 class Station(Model):
@@ -45,15 +46,15 @@ class Station(Model):
         for num in range(num_vehicle):
             arrival_hour = random.randint(0, 23)
             arrival_step = random.randint((arrival_hour * self.time_step) + 1, (arrival_hour + 1) * self.time_step)
-            obj = Vehicle(vehicle_id=num, station=self, params=self.vehicle_params, arrival=arrival_step)
+            obj = Vehicle(unique_id=num, station=self, params=self.vehicle_params, arrival=arrival_step)
             self.schedule.add(obj)
 
         for num in range(num_battery):
-            obj = Battery(battery_id=num_vehicle + num, station=self, capacity=150, soc=100)
+            obj = Battery(unique_id=num_vehicle + num, station=self, capacity=150, soc=100)
             self.schedule.add(obj)
 
         # List to contain all chargers at the station.
-        self.charge_list = [Charger(charger_id=num, power=350, num_sockets=4) for num in range(num_charger)]
+        self.charge_list = [Charger(power=350, num_sockets=4) for _ in range(num_charger)]
 
         # Data collector for model and agent variables.
         self.datacollector = DataCollector(
