@@ -154,8 +154,12 @@ class Vehicle(Agent):
         """
         Vehicle actions to execute for the second stage of each iteration of a simulation.
         """
-        for charger in self.station.charge_list:
-            charger.update_power()
+        # Update the power of all chargers once before charging all vehicles.
+        if not self.station.power_updated:
+            for charger in self.station.charge_list:
+                charger.update_power()
+            self.station.power_updated = True
+
         if self.state['charging']:
             self.update_soc()
 
