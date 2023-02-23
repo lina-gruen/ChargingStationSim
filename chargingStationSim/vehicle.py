@@ -7,6 +7,7 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
 import random
+random.seed(1256)
 
 
 class Vehicle(Agent):
@@ -16,13 +17,13 @@ class Vehicle(Agent):
 
     default_params = {'weight': None, 'dist_type': None, 'capacity': None, 'efficiency': None, 'max_charge': None}
 
-    def __init__(self, vehicle_id, station, params, arrival):
-        super().__init__(vehicle_id, station)
+    def __init__(self, unique_id, station, params, arrival):
+        super().__init__(unique_id, station)
         """
         Parameters
         ----------
-        vehicle_id: int
-            Unique id for the vehicle.
+        unique_id: int
+            Id for the vehicle.
         station: mesa.model
             Instance of the station that contains the vehicle.
         params: dict
@@ -41,7 +42,6 @@ class Vehicle(Agent):
         arrival: int
             Iteration at which the vehicle first arrives at a charging station.
         """
-        self.id = vehicle_id
         self.station = station
         self.time = station.time_step  # time per iteration step in hours (decimal if resolution is less than 1 hour).
         self.weight = params['weight']
@@ -114,18 +114,44 @@ class Vehicle(Agent):
 
     def find_charger(self):
         """
-        Uses charger if one is free, else waits until next iteration to check again.
+        Uses charger if one is free, else waits until next simulation step to check again.
         """
+        def charger_found(choice):
+            if self.state['waiting']:
+                self.state['waiting'] = False
+            self.state['charging'] = True
+            self.charger = choice
+            self.charger.add_vehicle()
+            self.charger.update_power()
+
+        best_choice = (None, 0)
         for charger in self.station.charge_list:
             if charger.available:
-                if self.state['waiting']:
-                    self.state['waiting'] = False
-                self.state['charging'] = True
-                self.charger = charger
-                self.charger.add_vehicle()
-                break
-            elif not self.state['waiting']:
-                self.state['waiting'] = True
+                if charger.socket_power == charger.max_power:
+                    charger_found(charger)
+                    break
+                elif charger.socket_power > best_choice[1]:
+                    best_choice = (charger, charger.socket_power)
+
+        if not self.state['charging'] and best_choice[0] is not None:
+            charger_found(best_choice[0])
+        elif not self.state['charging'] and not self.state['waiting']:
+            self.state['waiting'] = True
+
+        # def closest_value(power_list, target):
+        #     """
+        #     Finds the available power output closest to the target power.
+        #
+        #     Parameters
+        #     ----------
+        #     power_list
+        #     target
+        #
+        #     Returns
+        #     -------
+        #     Position
+        #     """
+        #     return power_list[min(range(len(power_list)), key=lambda num: abs(power_list[num] - target))]
 
     def check_vehicle(self):
         """
