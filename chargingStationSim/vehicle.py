@@ -59,7 +59,7 @@ class Vehicle(Agent):
         self.power = 0
         '''
         # Current state of the vehicle.
-        self.state = {'charging': False, 'driving': False, 'waiting': False}
+        self.state = {'charging': False, 'arrived': False, 'waiting': False}
         # The charger the vehicle is using. None if not charging.
         self.charger = None
 
@@ -74,19 +74,19 @@ class Vehicle(Agent):
         """
         return random.randint(0, 90)
 
-    def drive(self):
-        """
-        Updates the soc of the vehicle when driving.
-        """
-        speed = 60  # km/h
-        driving_demand = (self.efficiency * speed * self.time) / 60
-        new_soc = self.soc - (driving_demand / self.capacity) * 100
-        if new_soc <= 0:
-            self.soc = 0
-            self.state['driving'] = False
-            self.state['waiting'] = True
-        else:
-            self.soc = round(new_soc, 2)
+    # def drive(self):
+    #     """
+    #     Updates the soc of the vehicle when driving.
+    #     """
+    #     speed = 60  # km/h
+    #     driving_demand = (self.efficiency * speed * self.time) / 60
+    #     new_soc = self.soc - (driving_demand / self.capacity) * 100
+    #     if new_soc <= 0:
+    #         self.soc = 0
+    #         self.state['driving'] = False
+    #         self.state['waiting'] = True
+    #     else:
+    #         self.soc = round(new_soc, 2)
 
     def update_soc(self):
         """
@@ -108,7 +108,7 @@ class Vehicle(Agent):
             self.state['charging'] = False
             self.charger.remove_vehicle()
             self.charger = None
-            self.state['driving'] = True
+            self.state['arrived'] = True
         else:
             self.soc = round(new_soc, 2)
 
@@ -118,26 +118,31 @@ class Vehicle(Agent):
         """
         for charger in self.station.charge_list:
             if charger.available:
-                self.state['waiting'] = False
+                if self.state['waiting']:
+                    self.state['waiting'] = False
                 self.state['charging'] = True
                 self.charger = charger
                 self.charger.add_vehicle()
                 break
-            else:
-                pass
+            elif not self.state['waiting']:
+                self.state['waiting'] = True
 
     def check_vehicle(self):
         """
         Checks which action to take for a vehicle.
         """
-        if self.state['charging']:
+        if self.state['arrived']:
             pass
-        elif self.state['driving']:
-            self.drive()
+        elif self.state['charging']:
+            pass
+        # elif self.state['driving']:
+        #     self.drive()
         elif self.state['waiting']:
             self.find_charger()
         elif self.arrival == self.station.schedule.steps:
             self.find_charger()
+        else:
+            pass
 
     def step_1(self):
         """
