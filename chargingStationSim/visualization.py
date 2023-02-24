@@ -33,6 +33,12 @@ def vehicle_plot(results):
 
     # Start soc for all vehicles.
     start_soc = data.xs(0, level='Step')['Soc']
+    plt.figure()
+    start_soc.hist(bins=range(int(data.Soc.max()) + 1))
+    plt.xlabel('Time [min/10]')
+    plt.ylabel('Number of vehicles')
+    plt.title('Starts soc')
+    plt.show()
 
     # Final soc of all vehicles.
     """
