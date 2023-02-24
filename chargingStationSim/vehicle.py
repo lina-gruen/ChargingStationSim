@@ -127,11 +127,12 @@ class Vehicle(Agent):
         best_choice = (None, 0)
         for charger in self.station.charge_list:
             if charger.available:
-                if charger.socket_power == charger.max_power:
+                power = charger.check_new_power()
+                if power == charger.max_power:
                     charger_found(charger)
                     break
-                elif charger.socket_power > best_choice[1]:
-                    best_choice = (charger, charger.socket_power)
+                elif power > best_choice[1]:
+                    best_choice = (charger, power)
 
         if not self.state['charging'] and best_choice[0] is not None:
             charger_found(best_choice[0])
