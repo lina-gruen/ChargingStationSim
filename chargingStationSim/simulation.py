@@ -19,13 +19,13 @@ time_step = 10
 num_steps = int((sim_time/time_step)*60)
 
 # Set model parameters for a simulation.
-model_params = {'num_vehicle': 20, 'num_battery': 0, 'num_charger': 2, 'time_step': 60/time_step}
+model_params = {'num_vehicle': 50, 'num_battery': 0, 'num_charger': 6, 'time_step': 60/time_step}
 
 # Start a simulation.
 results = batch_run(
     model_cls=Station,
     parameters=model_params,
-    iterations=1,
+    iterations=5,
     max_steps=num_steps,
     number_processes=1,
     data_collection_period=1,
@@ -33,5 +33,6 @@ results = batch_run(
 )
 
 # Run functions for visualization of the simulation results.
-station_plot(results)
-vehicle_plot(results)
+station_data = station_plot(results, multirun=True, iterations=5)
+# vehicle_data = vehicle_plot(results)
+
