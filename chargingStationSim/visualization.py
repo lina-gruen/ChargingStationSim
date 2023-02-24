@@ -11,14 +11,14 @@ import matplotlib.pyplot as plt
 
 def station_plot(results):
     data = pd.DataFrame(results)
-    # Convert 10 min resolution to single minutes.
-    data['Step'] *= 10
+    # Convert 10 min resolution to hours.
+    data['Step'] *= (10/60)
     data.set_index(['Step'], inplace=True)
 
     # Development of the station power.
     plt.figure()
     plt.plot(data.xs('Power', axis=1))
-    plt.xlabel('Time [min]')
+    plt.xlabel('Time [h]')
     plt.ylabel('Power [kW]')
     plt.title('Station power')
     plt.show()
@@ -28,7 +28,7 @@ def station_plot(results):
 
 def vehicle_plot(results):
     data = pd.DataFrame(results)
-    data['Step'] *= 10
+    data['Step'] *= (10/60)
     data.set_index(['Step', 'AgentID'], inplace=True)
 
     # Start soc for all vehicles.
