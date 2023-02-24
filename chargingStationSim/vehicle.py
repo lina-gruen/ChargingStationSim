@@ -6,8 +6,10 @@ The file contains the Vehicle class
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
-import random
-random.seed(1256)
+from numpy.random import default_rng
+random = default_rng(seed=1256)
+# import random
+# random.seed(1256)
 
 
 class Vehicle(Agent):
@@ -72,7 +74,8 @@ class Vehicle(Agent):
         -------
         New soc for the vehicle.
         """
-        return random.randint(0, 90)
+        # random.randint(0, 90)
+        return random.gamma(shape=3, scale=6)
 
     # def drive(self):
     #     """
