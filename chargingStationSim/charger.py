@@ -42,6 +42,16 @@ class Charger:
         Prøv å få til individuell effekt på hvert uttak dersom ulike effekter er ønskelig. Liste for socket_power?
         """
 
+    def check_new_power(self):
+        """
+        Checks what the socket power would be if the charger got an additional user.
+
+        Returns
+        -------
+        Socket power in kW.
+        """
+        return self.max_power / (self.num_users + 1)
+
     def add_vehicle(self):
         """
         Add a new vehicle to the charger.
