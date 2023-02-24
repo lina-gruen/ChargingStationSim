@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def station_plot(results, multirun=False, iterations=0):
+def station_plot(results, multirun=False, iterations=0, steps=0):
     data = pd.DataFrame(results)
     # Convert 10 min resolution to hours.
     data['Step'] *= (10/60)
@@ -25,12 +25,14 @@ def station_plot(results, multirun=False, iterations=0):
         plt.show()
     else:
         data.set_index(['iteration', 'Step'], inplace=True)
-        for iter_num in range(iterations):
-            for step in range(steps):
 
         # Development of the station power.
         plt.figure()
-        plt.plot(data.xs(iter_num, level='iteration')['Power'])
+        for iter_num in range(iterations):
+            plt.plot(data.xs(iter_num, level='iteration')['Power'])
+
+        plt.figure()
+        plt.plot(data.groupby('Step')['Power'].mean())
         plt.xlabel('Time [h]')
         plt.ylabel('Power [kW]')
         plt.title('Station power')
