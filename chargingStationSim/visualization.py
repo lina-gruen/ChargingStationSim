@@ -7,9 +7,21 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
+# plt.style.use('stylename')
+from matplotlib import cycler
+# Set custom matplotlib style.
+colors = cycler('color',
+                ['#3F5D7D', '#EE6666', '#3388BB', '#9988DD',
+                 '#EECC55', '#88BB44', '#FFBBBB'])
+plt.rc('figure', facecolor='#E6E6E6', edgecolor='none'),
+plt.rc('axes', facecolor='#E6E6E6', edgecolor='none',
+       axisbelow=True, grid=True, prop_cycle=colors)
+plt.rc('grid', color='w', linestyle='solid', linewidth=1)
+plt.rc('xtick', direction='out', color='dimgray')
+plt.rc('ytick', direction='out', color='dimgray')
+plt.rc('patch', edgecolor='#E6E6E6')
+plt.rc('lines', linewidth=2)
 from scipy.stats import sem
-sns.set_style('darkgrid')
 
 
 def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_duration=24):
@@ -47,7 +59,7 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
         plt.plot(mean_data)
         plt.xlabel('Time [h]')
         plt.ylabel('Power [kW]')
-        plt.title('Station power')
+        plt.title('Station load')
         plt.show()
 
         plt.figure()
@@ -56,7 +68,10 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
         under_line = (mean_data + std_data)
         plt.plot(line, linewidth=2)
         plt.fill_between(line.index, under_line,
-                         over_line, color='red', alpha=.3)
+                         over_line, alpha=.3)
+        plt.xlabel('Time [h]')
+        plt.ylabel('Power [kW]')
+        plt.title('Station load')
         plt.show()
 
         # Boxplot for mean power over all runs.
@@ -76,12 +91,14 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
         dur_data.set_index('percentage', inplace=True)
         reduced_dur = dur_data['mean'].drop_duplicates()
 
+        """
         plt.figure()
         reduced_dur.plot()
         plt.xlabel('Percentage [%]')
         plt.ylabel('Load [kW]')
         plt.title('Duration curve')
         plt.show()
+        """
 
     return mean_data
 
