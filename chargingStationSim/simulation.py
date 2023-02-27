@@ -25,7 +25,7 @@ model_params = {'num_vehicle': 50, 'num_battery': 0, 'num_charger': 6, 'time_ste
 results = batch_run(
     model_cls=Station,
     parameters=model_params,
-    iterations=5,
+    iterations=10,
     max_steps=num_steps,
     number_processes=1,
     data_collection_period=1,
@@ -33,6 +33,5 @@ results = batch_run(
 )
 
 # Run functions for visualization of the simulation results.
-station_data = station_plot(results, multirun=True, iterations=5)
+station_data = station_plot(results, multirun=True, iterations=10, resolution=time_step/60, sim_duration=sim_time)
 # vehicle_data = vehicle_plot(results)
-
