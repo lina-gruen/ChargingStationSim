@@ -12,8 +12,8 @@ from mesa import Model
 # from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
 from mesa.datacollection import DataCollector
-import random
-random.seed(1234)
+# import random
+# random.seed(1234)
 
 
 class Station(Model):
@@ -44,9 +44,7 @@ class Station(Model):
         # ---------------------------------------------------------------------------
 
         for num in range(num_vehicle):
-            arrival_hour = random.randint(0, 23)
-            arrival_step = random.randint((arrival_hour * self.time_step) + 1, (arrival_hour + 1) * self.time_step)
-            obj = Vehicle(unique_id=num, station=self, params=self.vehicle_params, arrival=arrival_step)
+            obj = Vehicle(unique_id=num, station=self, params=self.vehicle_params)
             self.schedule.add(obj)
 
         for num in range(num_battery):
