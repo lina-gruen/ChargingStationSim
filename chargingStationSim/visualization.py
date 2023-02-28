@@ -52,23 +52,26 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
         """
 
         # Mean power and standard deviation for all runs.
-        mean_data = data.groupby('Step')['Power'].mean()
-        std_data = data.groupby('Step')['Power'].std()
+        mean_data = pd.DataFrame()
+        mean_data['mean'] = data.groupby('Step')['Power'].mean()
+        mean_data['std'] = data.groupby('Step')['Power'].std()
+        mean_data['max'] = mean_data['mean'].max()
 
         plt.figure()
-        plt.plot(mean_data)
+        plt.plot(mean_data['mean'])
+        plt.plot(mean_data['max'], linestyle='dotted', linewidth=1.5)
         plt.xlabel('Time [h]')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
         plt.show()
 
         plt.figure()
-        line = mean_data
-        over_line = (mean_data - std_data)
-        under_line = (mean_data + std_data)
-        plt.plot(line, linewidth=2)
-        plt.fill_between(line.index, under_line,
+        over_line = (mean_data['mean'] - mean_data['std'])
+        under_line = (mean_data['mean'] + mean_data['std'])
+        plt.plot(mean_data['mean'])
+        plt.fill_between(mean_data.index, under_line,
                          over_line, alpha=.3)
+        plt.plot(mean_data['max'], linestyle='dotted', linewidth=1.5)
         plt.xlabel('Time [h]')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
@@ -82,8 +85,7 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
         """
 
         # Duration plot for mean power over all runs.
-        dur_data = pd.DataFrame()
-        dur_data['mean'] = data.groupby('Step')['Power'].mean()
+        dur_data = mean_data
         dur_data['interval'] = resolution  # time per step in hours.
         dur_data.sort_values(by=['mean'], ascending=False, inplace=True)
         dur_data['duration'] = dur_data['interval'].cumsum()
