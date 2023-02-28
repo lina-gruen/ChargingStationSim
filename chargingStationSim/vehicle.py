@@ -7,9 +7,9 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
 from numpy.random import default_rng
-random = default_rng(seed=1256)
-# import random
-# random.seed(1256)
+import random
+rand_generator = default_rng(seed=1256)
+random.seed(1256)
 
 
 class Vehicle(Agent):
@@ -19,7 +19,7 @@ class Vehicle(Agent):
 
     default_params = {'weight': None, 'dist_type': None, 'capacity': None, 'efficiency': None, 'max_charge': None}
 
-    def __init__(self, unique_id, station, params, arrival):
+    def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station)
         """
         Parameters
@@ -41,8 +41,6 @@ class Vehicle(Agent):
                     Efficiency of the battery measured in kWh/km.
                 max_charge: int
                     Maximum power at which the vehicle can charge in kW.
-        arrival: int
-            Iteration at which the vehicle first arrives at a charging station.
         """
         self.station = station
         self.time = station.time_step  # time per iteration step in hours (decimal if resolution is less than 1 hour).
@@ -51,7 +49,8 @@ class Vehicle(Agent):
         self.capacity = params['capacity']
         self.efficiency = params['efficiency']
         self.max_charge = params['max_charge']
-        self.arrival = arrival
+        # Arrival time at charging station.
+        self.arrival = self.get_arrival()
         # State of Charge of the vehicle battery.
         self.soc = self.get_soc()
         # kWh needed for the vehicle.
@@ -75,7 +74,19 @@ class Vehicle(Agent):
         New soc for the vehicle.
         """
         # random.randint(0, 90)
-        return random.gamma(shape=3, scale=6)
+        return rand_generator.gamma(shape=3, scale=6)
+
+    def get_arrival(self):
+        """
+        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+
+        Returns
+        -------
+        New arrival time for the vehicle.
+        """
+        arrival_hour = random.randint(0, 23)
+        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        return arrival_step
 
     # def drive(self):
     #     """
@@ -119,6 +130,7 @@ class Vehicle(Agent):
         """
         Uses charger if one is free, else waits until next simulation step to check again.
         """
+
         def charger_found(choice):
             if self.state['waiting']:
                 self.state['waiting'] = False
@@ -201,3 +213,78 @@ class Group1(Vehicle):
 
     def __init__(self, vehicle_id, station, params, arrival):
         super().__init__(vehicle_id, station, params, arrival)
+
+    def get_arrival(self):
+        """
+        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+
+        Returns
+        -------
+        New arrival time for the vehicle.
+        """
+        arrival_hour = random.randint(0, 23)
+        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        return arrival_step
+
+
+class Group2(Vehicle):
+    """
+    Subclass for all group2 vehicles.
+    """
+
+    def __init__(self, vehicle_id, station, params, arrival):
+        super().__init__(vehicle_id, station, params, arrival)
+
+    def get_arrival(self):
+        """
+        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+
+        Returns
+        -------
+        New arrival time for the vehicle.
+        """
+        arrival_hour = random.randint(0, 23)
+        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        return arrival_step
+
+
+class Group3(Vehicle):
+    """
+    Subclass for all group3 vehicles.
+    """
+
+    def __init__(self, vehicle_id, station, params, arrival):
+        super().__init__(vehicle_id, station, params, arrival)
+
+    def get_arrival(self):
+        """
+        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+
+        Returns
+        -------
+        New arrival time for the vehicle.
+        """
+        arrival_hour = random.randint(0, 23)
+        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        return arrival_step
+
+
+class Group4(Vehicle):
+    """
+    Subclass for all group4 vehicles.
+    """
+
+    def __init__(self, vehicle_id, station, params, arrival):
+        super().__init__(vehicle_id, station, params, arrival)
+
+    def get_arrival(self):
+        """
+        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+
+        Returns
+        -------
+        New arrival time for the vehicle.
+        """
+        arrival_hour = random.randint(0, 23)
+        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        return arrival_step
