@@ -14,12 +14,13 @@ from mesa.batchrunner import batch_run
 # Duration of simulation in hours.
 sim_time = 24
 # Time resolution of each step in the simulation in minutes.
-time_step = 10
+time_resolution = 10
 # Number of steps the simulation requires.
-num_steps = int((sim_time/time_step)*60)
+num_steps = int((sim_time/time_resolution)*60) - 1
 
 # Set model parameters for a simulation.
-model_params = {'num_vehicle': 50, 'num_battery': 0, 'num_charger': 6, 'time_step': 60/time_step}
+model_params = {'num_vehicle': 50, 'num_battery': 0, 'num_charger': 6,
+                'time_resolution': time_resolution, 'sim_time': sim_time}
 
 # Start a simulation.
 results = batch_run(
@@ -33,5 +34,5 @@ results = batch_run(
 )
 
 # Run functions for visualization of the simulation results.
-station_data = station_plot(results, multirun=True, iterations=10, resolution=time_step/60, sim_duration=sim_time)
+station_data = station_plot(results, multirun=True, iterations=10, time_step=time_resolution/60, sim_duration=sim_time)
 # vehicle_data = vehicle_plot(results)
