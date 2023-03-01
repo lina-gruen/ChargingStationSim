@@ -12,6 +12,7 @@ from mesa import Model
 # from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
 from mesa.datacollection import DataCollector
+import pandas as pd
 # import random
 # random.seed(1234)
 
@@ -23,7 +24,7 @@ class Station(Model):
 
     vehicle_params = {'weight': None, 'dist_type': None, 'capacity': 150, 'efficiency': 1.5, 'max_charge': 350}
 
-    def __init__(self, num_vehicle, num_battery, num_charger, time_step):
+    def __init__(self, num_vehicle, num_battery, num_charger, time_resolution, sim_time):
         super().__init__()
 
         # Simulation-----------------------------------------------------------------
@@ -35,9 +36,17 @@ class Station(Model):
         # Variable to stop simulation if set to False.
         self.running = True
         # Time that passes for each step in hours.
-        self.time_step = time_step
-        # Duration for a simulation.
-        # self.sim_time = sim_time
+        # self.time_step = None
+        # Duration for a simulation in hours.
+        self.sim_time = sim_time
+        # Time that passes for each step in minutes.
+        self.resolution = time_resolution
+        # List of timestamps for each simulation step.
+        self.timestamps = pd.Series(pd.date_range('20230101 00:00:00',
+                                                  periods=self.sim_time * (60 / self.resolution),
+                                                  freq=f'{self.resolution}T')).dt.time
+        # The timestamp for the current step in a simulation.
+        self.step_time = None
         # If the power of the chargers on the station have been updated. Should happen once for each step.
         self.power_updated = False
 
@@ -56,7 +65,8 @@ class Station(Model):
 
         # Data collector for model and agent variables.
         self.datacollector = DataCollector(
-            model_reporters={'Power': self.get_station_power}, agent_reporters={'Soc': 'soc', 'Arrival': 'arrival'}
+            model_reporters={'Power': self.get_station_power, 'Time': 'step_time'},
+            agent_reporters={'Soc': 'soc', 'Arrival': 'arrival'}
         )
 
     def get_station_power(self):
@@ -74,10 +84,13 @@ class Station(Model):
         """
         Actions to execute for each iteration of a simulation.
         """
+        # Find correct timestamp of the current step.
+        self.step_time = self.timestamps[self.schedule.steps]
+        # Collect data from the current step.
         self.datacollector.collect(self)
         # Iterate through all agents (vehicles, batteries) in the model.
         self.schedule.step()
-        # Reset variable for the next step. Checks if the power of the chargers is updated.
+        # Reset variable for the next step. Checks if the power of each charger is updated.
         self.power_updated = False
 
 
