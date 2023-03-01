@@ -24,14 +24,14 @@ plt.rc('lines', linewidth=2)
 from scipy.stats import sem
 
 
-def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_duration=24):
+def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_duration=24):
     data = pd.DataFrame(results)
     # Convert 10 min resolution to hours.
-    data['Step'] *= (10/60)
+    # data['Step'] *= time_step
 
     # If only one run is made.
     if not multirun:
-        data.set_index(['Step'], inplace=True)
+        data.set_index(['Time'], inplace=True)
 
         # Development of the station power.
         plt.figure()
@@ -42,7 +42,7 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
         plt.show()
     # If multiple runs are made, the mean of all runs is plotted.
     else:
-        data.set_index(['iteration', 'Step'], inplace=True)
+        data.set_index(['iteration', 'Time'], inplace=True)
 
         # Development of the station power.
         """
@@ -53,14 +53,15 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
 
         # Mean power and standard deviation for all runs.
         mean_data = pd.DataFrame()
-        mean_data['mean'] = data.groupby('Step')['Power'].mean()
-        mean_data['std'] = data.groupby('Step')['Power'].std()
+        mean_data['mean'] = data.groupby('Time')['Power'].mean()
+        mean_data['std'] = data.groupby('Time')['Power'].std()
         mean_data['max'] = mean_data['mean'].max()
 
         plt.figure()
-        plt.plot(mean_data['mean'])
-        plt.plot(mean_data['max'], linestyle='dotted', linewidth=1.5)
-        plt.xlabel('Time [h]')
+        mean_data['mean'].plot()
+        mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
+        plt.xticks(rotation=45)
+        plt.xlabel('Time')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
         plt.show()
@@ -68,11 +69,11 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
         plt.figure()
         over_line = (mean_data['mean'] - mean_data['std'])
         under_line = (mean_data['mean'] + mean_data['std'])
-        plt.plot(mean_data['mean'])
+        mean_data['mean'].plot()
         plt.fill_between(mean_data.index, under_line,
                          over_line, alpha=.3)
-        plt.plot(mean_data['max'], linestyle='dotted', linewidth=1.5)
-        plt.xlabel('Time [h]')
+        mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
+        plt.xlabel('Time')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
         plt.show()
@@ -84,14 +85,16 @@ def station_plot(results, multirun=False, iterations=0, resolution=60/10, sim_du
         plt.show()
         """
 
+        """
         # Duration plot for mean power over all runs.
         dur_data = mean_data
-        dur_data['interval'] = resolution  # time per step in hours.
+        dur_data['interval'] = time_step  # time per step in hours.
         dur_data.sort_values(by=['mean'], ascending=False, inplace=True)
         dur_data['duration'] = dur_data['interval'].cumsum()
         dur_data['percentage'] = dur_data['duration'] * 100 / sim_duration
         dur_data.set_index('percentage', inplace=True)
         reduced_dur = dur_data['mean'].drop_duplicates()
+        """
 
         """
         plt.figure()
