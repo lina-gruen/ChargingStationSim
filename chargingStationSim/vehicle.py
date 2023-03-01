@@ -6,10 +6,11 @@ The file contains the Vehicle class
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
+import pandas as pd
 from numpy.random import default_rng
 import random
-rand_generator = default_rng(seed=1256)
 random.seed(1256)
+rand_generator = default_rng(seed=1256)
 
 
 class Vehicle(Agent):
@@ -43,7 +44,7 @@ class Vehicle(Agent):
                     Maximum power at which the vehicle can charge in kW.
         """
         self.station = station
-        self.time = station.time_step  # time per iteration step in hours (decimal if resolution is less than 1 hour).
+        self.resolution = station.resolution  # time per iteration step in minutes.
         self.weight = params['weight']
         self.dist_type = params['dist_type']
         self.capacity = params['capacity']
@@ -85,7 +86,8 @@ class Vehicle(Agent):
         New arrival time for the vehicle.
         """
         arrival_hour = random.randint(0, 23)
-        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        arrival_step = random.randint((arrival_hour * (60 / self.resolution)) + 1,
+                                      (arrival_hour + 1) * (60 / self.resolution))
         return arrival_step
 
     # def drive(self):
@@ -112,7 +114,7 @@ class Vehicle(Agent):
         # target_soc = self.soc + (self.demand / self.capacity) * 100
         '''
         # how many kWh can be charged per iteration step with current power.
-        step_demand = self.charger.socket_power * (self.time / 60)  # min/60=h
+        step_demand = self.charger.socket_power * (self.resolution / 60)  # min/60=h
         '''
         Sjå om ein faktisk trenge å oppdatere iter_demand hver runde. if self.power == self.charger.socket_power: pass
         '''
@@ -222,8 +224,12 @@ class Group1(Vehicle):
         -------
         New arrival time for the vehicle.
         """
-        arrival_hour = random.randint(0, 23)
-        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        # arrival_hour = random.randint(0, 23)
+        # arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+
+        s = pd.Series(pd.date_range('20230101 00:00:00', periods=24 * (60 / 10), freq='10T'))
+        times = s.dt.time
+        arrival_step = rand_generator.choice(times, p=None)
         return arrival_step
 
 
