@@ -7,6 +7,7 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 import pandas as pd
 import matplotlib.pyplot as plt
+# import matplotlib.dates as mdates
 # plt.style.use('stylename')
 from matplotlib import cycler
 # Set custom matplotlib style.
@@ -21,7 +22,7 @@ plt.rc('xtick', direction='out', color='dimgray')
 plt.rc('ytick', direction='out', color='dimgray')
 plt.rc('patch', edgecolor='#E6E6E6')
 plt.rc('lines', linewidth=2)
-from scipy.stats import sem
+# from scipy.stats import sem
 
 
 def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_duration=24):
@@ -42,7 +43,7 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.show()
     # If multiple runs are made, the mean of all runs is plotted.
     else:
-        data.set_index(['iteration', 'Time'], inplace=True)
+        data.set_index(['iteration', 'Step'], inplace=True)
 
         # Development of the station power.
         """
@@ -53,18 +54,17 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
 
         # Mean power and standard deviation for all runs.
         mean_data = pd.DataFrame()
-        mean_data['mean'] = data.groupby('Time')['Power'].mean()
-        mean_data['std'] = data.groupby('Time')['Power'].std()
+        mean_data['mean'] = data.groupby(data['Time'].dt.time)['Power'].mean()
+        mean_data['std'] = data.groupby(data['Time'].dt.time)['Power'].std()
         mean_data['max'] = mean_data['mean'].max()
 
         plt.figure()
         mean_data['mean'].plot()
         mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
-        plt.xticks(rotation=45)
-        plt.xlabel('Time')
+        # ax.xaxis.set_major_locator(HourLocator())
+        plt.xlabel('Time [h]')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
-        plt.show()
 
         plt.figure()
         over_line = (mean_data['mean'] - mean_data['std'])
@@ -72,8 +72,9 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         mean_data['mean'].plot()
         plt.fill_between(mean_data.index, under_line,
                          over_line, alpha=.3)
+        # ax.xaxis.set_major_locator(HourLocator())
         mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
-        plt.xlabel('Time')
+        plt.xlabel('Time [h]')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
         plt.show()
@@ -110,14 +111,14 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
 
 def vehicle_plot(results):
     data = pd.DataFrame(results)
-    data['Step'] *= (10/60)
-    data.set_index(['Step', 'AgentID'], inplace=True)
+    # data['Step'] *= (10/60)
+    data.set_index(['iteration', 'Step', 'AgentID'], inplace=True)
 
     # Start soc for all vehicles.
-    start_soc = data.xs(0, level='Step')['Soc']
+    start_soc = data.xs((0, 0), level=['iteration', 'Step'])['Soc']
     plt.figure()
     start_soc.hist(bins=range(int(data.Soc.max()) + 1))
-    plt.xlabel('Time [min/10]')
+    plt.xlabel('SOC [%]')
     plt.ylabel('Number of vehicles')
     plt.title('Starts soc')
     plt.show()
@@ -132,10 +133,10 @@ def vehicle_plot(results):
 
     # Chosen arrival times for each vehicle.
     # xs() returns a specific section of the dataframe based on index level and row values.
-    start_arrival = data.xs(0, level='Step')['Arrival']
+    start_arrival = data.xs((0, 0), level=['iteration', 'Step'])['Arrival']
     plt.figure()
-    start_arrival.hist(bins=range(int(data.Arrival.max()) + 1))
-    plt.xlabel('Time [min/10]')
+    start_arrival.groupby(start_arrival.dt.hour).count().plot(kind='bar')
+    plt.xlabel('Time [h]')
     plt.ylabel('Number of vehicles')
     plt.title('Arrival times')
     plt.show()
