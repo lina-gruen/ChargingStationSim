@@ -9,6 +9,7 @@ from mesa import Agent
 import pandas as pd
 from numpy.random import default_rng
 import random
+
 random.seed(1256)
 rand_generator = default_rng(seed=1256)
 
@@ -85,9 +86,10 @@ class Vehicle(Agent):
         -------
         New arrival time for the vehicle.
         """
-        arrival_hour = random.randint(0, 23)
-        arrival_step = random.randint((arrival_hour * (60 / self.resolution)) + 1,
-                                      (arrival_hour + 1) * (60 / self.resolution))
+        # arrival_hour = random.randint(0, 23)
+        # arrival_step = random.randint((arrival_hour * (60 / self.resolution)) + 1,
+        #                              (arrival_hour + 1) * (60 / self.resolution))
+        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
 
     # def drive(self):
@@ -183,7 +185,7 @@ class Vehicle(Agent):
         #     self.drive()
         elif self.state['waiting']:
             self.find_charger()
-        elif self.arrival == self.station.schedule.steps:
+        elif self.arrival == self.station.step_time:
             self.find_charger()
         else:
             pass
@@ -224,12 +226,8 @@ class Group1(Vehicle):
         -------
         New arrival time for the vehicle.
         """
-        # arrival_hour = random.randint(0, 23)
-        # arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
-
-        s = pd.Series(pd.date_range('20230101 00:00:00', periods=24 * (60 / 10), freq='10T'))
-        times = s.dt.time
-        arrival_step = rand_generator.choice(times, p=None)
+        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+        return arrival_step
         return arrival_step
 
 
@@ -249,8 +247,8 @@ class Group2(Vehicle):
         -------
         New arrival time for the vehicle.
         """
-        arrival_hour = random.randint(0, 23)
-        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+        return arrival_step
         return arrival_step
 
 
@@ -270,8 +268,8 @@ class Group3(Vehicle):
         -------
         New arrival time for the vehicle.
         """
-        arrival_hour = random.randint(0, 23)
-        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+        return arrival_step
         return arrival_step
 
 
@@ -291,6 +289,6 @@ class Group4(Vehicle):
         -------
         New arrival time for the vehicle.
         """
-        arrival_hour = random.randint(0, 23)
-        arrival_step = random.randint((arrival_hour * self.time) + 1, (arrival_hour + 1) * self.time)
+        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+        return arrival_step
         return arrival_step
