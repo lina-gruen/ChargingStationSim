@@ -44,7 +44,7 @@ class Station(Model):
         # List of timestamps for each simulation step.
         self.timestamps = pd.Series(pd.date_range('20230101 00:00:00',
                                                   periods=self.sim_time * (60 / self.resolution),
-                                                  freq=f'{self.resolution}T')).dt.time
+                                                  freq=f'{self.resolution}T'))  # .dt.time
         # The timestamp for the current step in a simulation.
         self.step_time = None
         # If the power of the chargers on the station have been updated. Should happen once for each step.
