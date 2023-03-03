@@ -158,21 +158,6 @@ class Vehicle(Agent):
         elif not self.state['charging'] and not self.state['waiting']:
             self.state['waiting'] = True
 
-        # def closest_value(power_list, target):
-        #     """
-        #     Finds the available power output closest to the target power.
-        #
-        #     Parameters
-        #     ----------
-        #     power_list
-        #     target
-        #
-        #     Returns
-        #     -------
-        #     Position
-        #     """
-        #     return power_list[min(range(len(power_list)), key=lambda num: abs(power_list[num] - target))]
-
     def check_vehicle(self):
         """
         Checks which action to take for a vehicle.
@@ -229,6 +214,42 @@ class Group1(Vehicle):
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
         return arrival_step
+
+    def charger_found(self, choice):
+        if self.state['waiting']:
+            self.state['waiting'] = False
+        self.state['charging'] = True
+        self.charger = choice
+        self.charger.add_vehicle()
+        self.charger.update_power()
+
+    def find_charger(self):
+        """
+        Uses charger if one is free, else waits until next simulation step to check again.
+        """
+
+        def closest_value(power_list, target):
+            """
+            Finds the charger socket with the power closest to the target power of the vehicle.
+
+            Parameters
+            ----------
+            power_list: list
+                All charger that are available and the power they can deliver.
+            target: int
+                The power the vehicle wants to charge with.
+
+            Returns
+            -------
+            Charger instance.
+            """
+            return power_list[min(range(len(power_list)), key=lambda num: abs(power_list[num][1] - target))][0]
+
+        available_power = [(charger, charger.check_new_power()) for charger in
+                           self.station.charge_list if charger.available]
+        target_power = self.max_charge
+        charger = closest_value(available_power, target_power)
+        self.charger_found(charger)
 
 
 class Group2(Vehicle):
