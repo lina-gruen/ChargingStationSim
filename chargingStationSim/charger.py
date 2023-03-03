@@ -25,7 +25,7 @@ class Charger:
         self.num_sockets = num_sockets
         self.max_power = power
         self.socket_power = self.max_power
-        self.used_power = 0
+        self.accessible_power = 0
 
     def update_power(self):
         """
@@ -37,22 +37,22 @@ class Charger:
             self.socket_power = self.max_power
 
         # used_power == max_power when power is distributed equally between sockets in use.
-        self.used_power = self.socket_power * self.num_users
+        self.accessible_power = self.socket_power * self.num_users
         """
         Prøv å få til individuell effekt på hvert uttak dersom ulike effekter er ønskelig. Liste for socket_power?
         """
 
-    def check_new_power(self):
-        """
-        Checks what the socket power would be if the charger got an additional user.
+    # def check_new_power(self):
+    #     """
+    #     Checks what the socket power would be if the charger got an additional user.
 
-        Returns
-        -------
-        Socket power in kW.
-        """
-        return self.max_power / (self.num_users + 1)
+    #     Returns
+    #     -------
+    #     Socket power in kW.
+    #     """
+    #     return self.max_power / (self.num_users + 1)
 
-    def add_vehicle(self):
+    def add_vehicle(self, used_power):
         """
         Add a new vehicle to the charger.
 
@@ -61,12 +61,17 @@ class Charger:
         maximum power for each power outlet.
         """
         self.num_users += 1
-        if self.num_users == self.num_sockets:
+        self.accessible_power -= used_power
+        if self.accessible_power == 0:
             self.available = False
 
-    def remove_vehicle(self):
+        # if self.num_users == self.num_sockets:
+        #     self.available = False
+
+    def remove_vehicle(self, freed_power):
         """
         Remove a vehicle from the charger.
         """
         self.num_users -= 1
+        self.accessible_power += freed_power
         self.available = True
