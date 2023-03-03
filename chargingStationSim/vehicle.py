@@ -45,7 +45,8 @@ class Vehicle(Agent):
                     Maximum power at which the vehicle can charge in kW.
         """
         self.station = station
-        self.resolution = station.resolution  # time per iteration step in minutes.
+        # Time per iteration step in minutes.
+        self.resolution = station.resolution
         self.weight = params['weight']
         self.dist_type = params['dist_type']
         self.capacity = params['capacity']
@@ -57,14 +58,12 @@ class Vehicle(Agent):
         self.soc = self.get_soc()
         # kWh needed for the vehicle.
         # self.demand = 0
-        '''
         # The power the vehicle is currently charging with.
         self.power = 0
-        '''
-        # Current state of the vehicle.
-        self.state = {'charging': False, 'arrived': False, 'waiting': False}
         # The charger the vehicle is using. None if not charging.
         self.charger = None
+        # Current state of the vehicle.
+        self.state = {'charging': False, 'arrived': False, 'waiting': False}
 
     @staticmethod
     def get_soc():
@@ -124,7 +123,7 @@ class Vehicle(Agent):
         if new_soc >= 100:
             self.soc = 100
             self.state['charging'] = False
-            self.charger.remove_vehicle()
+            self.charger.remove_vehicle(self.power)
             self.charger = None
             self.state['arrived'] = True
         else:
@@ -213,43 +212,44 @@ class Group1(Vehicle):
         """
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
-        return arrival_step
 
-    def charger_found(self, choice):
+    def connect_charger(self, char_choice, pow_choice):
+        """
+        Connect the vehicle to the chosen charger and sets the charging power to the chosen level.
+
+        Parameters
+        ----------
+        char_choice: Instance of the Charger class
+            The chosen charger.
+        pow_choice: int
+            The chosen power.
+        """
         if self.state['waiting']:
             self.state['waiting'] = False
         self.state['charging'] = True
-        self.charger = choice
-        self.charger.add_vehicle()
+        self.charger = char_choice
+        self.power = pow_choice
+        self.charger.add_vehicle(self.power)
         self.charger.update_power()
 
     def find_charger(self):
         """
-        Uses charger if one is free, else waits until next simulation step to check again.
+        Finds charger that can deliver the requested power. If nothing is available the vehicle waits until next step.
         """
-
-        def closest_value(power_list, target):
-            """
-            Finds the charger socket with the power closest to the target power of the vehicle.
-
-            Parameters
-            ----------
-            power_list: list
-                All charger that are available and the power they can deliver.
-            target: int
-                The power the vehicle wants to charge with.
-
-            Returns
-            -------
-            Charger instance.
-            """
-            return power_list[min(range(len(power_list)), key=lambda num: abs(power_list[num][1] - target))][0]
-
-        available_power = [(charger, charger.check_new_power()) for charger in
-                           self.station.charge_list if charger.available]
+        # All charger that are available and the power they can deliver.
+        available = [(charger, charger.accessible_power) for charger in self.station.charge_list if charger.available]
+        if not available:
+            self.state['waiting'] = True
+            return
         target_power = self.max_charge
-        charger = closest_value(available_power, target_power)
-        self.charger_found(charger)
+        # Find the charger for which the accessible power is closest to the target power of the vehicle.
+        charger = available[min(range(len(available)), key=lambda num: abs(available[num][1] - target_power))]
+        # If what's available is less or equal to the requested power we take all the available power:
+        if charger[1] <= target_power:
+            self.connect_charger(charger[0], charger[1])
+        # If the requested power is less than what's available we only take what was requested:
+        else:
+            self.connect_charger(charger[0], target_power)
 
 
 class Group2(Vehicle):
