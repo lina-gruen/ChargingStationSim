@@ -47,8 +47,6 @@ class Station(Model):
                                                   freq=f'{self.resolution}T'))  # .dt.time
         # The timestamp for the current step in a simulation.
         self.step_time = None
-        # If the power of the chargers on the station have been updated. Should happen once for each step.
-        self.power_updated = False
 
         # ---------------------------------------------------------------------------
 
@@ -77,7 +75,7 @@ class Station(Model):
         -------
 
         """
-        power_sum = [charger.used_power for charger in self.charge_list]
+        power_sum = [charger.max_power - charger.accessible_power for charger in self.charge_list]
         return sum(power_sum)
 
     def step(self):
@@ -91,7 +89,7 @@ class Station(Model):
         # Iterate through all agents (vehicles, batteries) in the model.
         self.schedule.step()
         # Reset variable for the next step. Checks if the power of each charger is updated.
-        self.power_updated = False
+        # self.power_updated = False
 
 
 if __name__ == '__main__':
