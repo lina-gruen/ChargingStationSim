@@ -106,13 +106,13 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.show()
         """
 
-    return mean_data
+    return data
 
 
 def vehicle_plot(results):
     data = pd.DataFrame(results)
     # data['Step'] *= (10/60)
-    data.set_index(['iteration', 'Step', 'AgentID'], inplace=True)
+    data.set_index(['iteration', 'Step'], inplace=True)
 
     # Start soc for all vehicles.
     start_soc = data.xs((0, 0), level=['iteration', 'Step'])['Soc']
