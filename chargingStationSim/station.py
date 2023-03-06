@@ -7,7 +7,7 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from chargingStationSim.battery import Battery
 from chargingStationSim.charger import Charger
-from chargingStationSim.vehicle import Vehicle
+from chargingStationSim.vehicle import Group1, Group2, Group3, Group4
 from mesa import Model
 # from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
@@ -22,12 +22,25 @@ class Station(Model):
     Class for a charging station.
     """
 
-    vehicle_params = {'weight': None, 'dist_type': None, 'capacity': 150, 'efficiency': 1.5, 'max_charge': 350}
+    vehicle_params = {'weight': None, 'capacity': 150, 'max_charge': 350}
 
-    def __init__(self, num_vehicle, num_battery, num_charger, time_resolution, sim_time):
+    def __init__(self, num_group1, num_group2, num_group3, num_group4, num_battery, num_charger,
+                 time_resolution, sim_time):
+        """
+        Parameters
+        ----------
+        num_group1 : int
+        num_group2 : int
+        num_group3 : int
+        num_group4 : int
+        num_battery: int
+        num_charger: int
+        time_resolution: int
+        sim_time: int
+        """
         super().__init__()
 
-        # Simulation-----------------------------------------------------------------
+        # Simulation----------------------------------------------------------------------------------------
 
         # Make a scheduler that splits each iteration into two steps
         vehicle_steps = ['step_1', 'step_2']
@@ -35,8 +48,6 @@ class Station(Model):
                                          shuffle=False, shuffle_between_stages=False)
         # Variable to stop simulation if set to False.
         self.running = True
-        # Time that passes for each step in hours.
-        # self.time_step = None
         # Duration for a simulation in hours.
         self.sim_time = sim_time
         # Time that passes for each step in minutes.
@@ -48,14 +59,19 @@ class Station(Model):
         # The timestamp for the current step in a simulation.
         self.step_time = None
 
-        # ---------------------------------------------------------------------------
+        # Agents--------------------------------------------------------------------------------------------
 
-        for num in range(num_vehicle):
-            obj = Vehicle(unique_id=num, station=self, params=self.vehicle_params)
-            self.schedule.add(obj)
+        vehicles = {'Group1': num_group1, 'Group2': num_group2, 'Group3': num_group3, 'Group4': num_group4}
+
+        counter = 0
+        for vehicle_type, vehicle_num in vehicles.items():
+            for num in range(vehicle_num):
+                obj = eval(vehicle_type)(unique_id=counter + num, station=self, params=self.vehicle_params)
+                self.schedule.add(obj)
+            counter += vehicle_num
 
         for num in range(num_battery):
-            obj = Battery(unique_id=num_vehicle + num, station=self, capacity=150, soc=100)
+            obj = Battery(unique_id=counter + num, station=self, capacity=150, soc=100)
             self.schedule.add(obj)
 
         # List to contain all chargers at the station.
