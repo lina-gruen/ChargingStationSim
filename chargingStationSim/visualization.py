@@ -25,7 +25,7 @@ plt.rc('lines', linewidth=2)
 # from scipy.stats import sem
 
 
-def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_duration=24):
+def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_duration=24, path=''):
     data = pd.DataFrame(results)
     # Convert 10 min resolution to hours.
     # data['Step'] *= time_step
@@ -62,9 +62,12 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         mean_data['mean'].plot()
         mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
         # ax.xaxis.set_major_locator(HourLocator())
-        plt.xlabel('Time [h]')
+        plt.xlabel('Time')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
+
+        plt.savefig(f'{path}/load_plot.pdf')
+        plt.close()
 
         plt.figure()
         over_line = (mean_data['mean'] - mean_data['std'])
@@ -74,10 +77,12 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
                          over_line, alpha=.3)
         # ax.xaxis.set_major_locator(HourLocator())
         mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
-        plt.xlabel('Time [h]')
+        plt.xlabel('Time')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
-        plt.show()
+
+        plt.savefig(f'{path}/mean_load_plot.pdf')
+        plt.close()
 
         # Boxplot for mean power over all runs.
         """
