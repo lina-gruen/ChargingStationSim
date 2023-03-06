@@ -19,10 +19,9 @@ class Vehicle(Agent):
     Base class for all vehicles in a vehicle fleet.
     """
 
-    default_params = {'weight': None, 'dist_type': None, 'capacity': None, 'efficiency': None, 'max_charge': None}
+    default_params = {'weight': None, 'capacity': None, 'max_charge': None}
 
     def __init__(self, unique_id, station, params):
-        super().__init__(unique_id, station)
         """
         Parameters
         ----------
@@ -34,23 +33,18 @@ class Vehicle(Agent):
             Parameters for the vehicle.
                 weight: string
                     Weight class category og the vehicle.
-                dist_type: string
-                    If the vehicle is for short-distance (local) or
-                    long-distance travel.
                 capacity: int
                     Max kWh rating of the vehicle battery.
-                efficiency: int
-                    Efficiency of the battery measured in kWh/km.
                 max_charge: int
                     Maximum power at which the vehicle can charge in kW.
         """
+        super().__init__(unique_id, station)
+
         self.station = station
         # Time per iteration step in minutes.
         self.resolution = station.resolution
         self.weight = params['weight']
-        self.dist_type = params['dist_type']
         self.capacity = params['capacity']
-        self.efficiency = params['efficiency']
         self.max_charge = params['max_charge']
         # Arrival time at charging station.
         self.arrival = self.get_arrival()
@@ -236,8 +230,10 @@ class Group1(Vehicle):
     Subclass for all group1 vehicles.
     """
 
-    def __init__(self, vehicle_id, station, params, arrival):
-        super().__init__(vehicle_id, station, params, arrival)
+    def __init__(self, unique_id, station, params):
+        super().__init__(unique_id, station, params)
+
+        self.charge_steps = self.get_charge_steps()
 
     def get_arrival(self):
         """
@@ -249,6 +245,41 @@ class Group1(Vehicle):
         """
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
+
+    def get_charge_steps(self):
+        """
+        Finds the maximum amount of steps the vehicle wants to charge from a probability distribution.
+
+        Returns
+        -------
+        Max steps available for charging.
+        """
+        time = rand_generator.normal(loc=45, scale=2)
+        steps = int(time / self.resolution)
+        return steps
+
+    def update_soc(self):
+        """
+        Updates the soc of the vehicle when charging.
+        """
+        # Update charging power if charger has more available power since last step (another vehicle disconnected).
+        if self.power < self.charger.accessible_power < self.target_power:
+            self.power = self.charger.accessible_power
+        elif self.charger.accessible_power >= self.target_power:
+            self.power = self.target_power
+        # how many kWh can be charged in the current step with the chosen power.
+        step_capacity = self.power * (self.resolution / 60)  # min/60=h
+
+        new_soc = self.soc + (step_capacity / self.capacity) * 100
+        self.charge_steps -= 1
+
+        if new_soc >= 100:
+            self.soc = 100
+            self.state['arrived'] = True
+        elif self.charge_steps == 0:
+            self.state['arrived'] = True
+        else:
+            self.soc = round(new_soc, 2)
 
 
 class Group2(Vehicle):
@@ -256,8 +287,8 @@ class Group2(Vehicle):
     Subclass for all group2 vehicles.
     """
 
-    def __init__(self, vehicle_id, station, params, arrival):
-        super().__init__(vehicle_id, station, params, arrival)
+    def __init__(self, unique_id, station, params):
+        super().__init__(unique_id, station, params)
 
     def get_arrival(self):
         """
@@ -268,7 +299,6 @@ class Group2(Vehicle):
         New arrival time for the vehicle.
         """
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-        return arrival_step
         return arrival_step
 
 
@@ -277,8 +307,10 @@ class Group3(Vehicle):
     Subclass for all group3 vehicles.
     """
 
-    def __init__(self, vehicle_id, station, params, arrival):
-        super().__init__(vehicle_id, station, params, arrival)
+    def __init__(self, unique_id, station, params):
+        super().__init__(unique_id, station, params)
+
+        # self.target_power = None
 
     def get_arrival(self):
         """
@@ -289,7 +321,6 @@ class Group3(Vehicle):
         New arrival time for the vehicle.
         """
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-        return arrival_step
         return arrival_step
 
 
@@ -298,8 +329,10 @@ class Group4(Vehicle):
     Subclass for all group4 vehicles.
     """
 
-    def __init__(self, vehicle_id, station, params, arrival):
-        super().__init__(vehicle_id, station, params, arrival)
+    def __init__(self, unique_id, station, params):
+        super().__init__(unique_id, station, params)
+
+        # self.target_power = None
 
     def get_arrival(self):
         """
@@ -311,4 +344,4 @@ class Group4(Vehicle):
         """
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
-        return arrival_step
+
