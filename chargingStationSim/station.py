@@ -22,10 +22,14 @@ class Station(Model):
     Class for a charging station.
     """
 
-    vehicle_params = {'weight': None, 'capacity': 150, 'max_charge': 350}
+    # Parameters for each vehicle group containing mean values to use in a probability distribution.
+    vehicle_params = {'Group1': {'weight': None, 'capacity': (100, 150, 200), 'max_charge': (150, 200, 250)},
+                      'Group2': {'weight': None, 'capacity': (100, 150, 200), 'max_charge': (150, 200, 250)},
+                      'Group3': {'weight': None, 'capacity': (200, 250, 300), 'max_charge': (200, 250, 350)},
+                      'Group4': {'weight': None, 'capacity': (250, 300, 350), 'max_charge': (350, 400, 450)}}
 
     def __init__(self, num_group1, num_group2, num_group3, num_group4, num_battery, num_charger,
-                 time_resolution, sim_time):
+                 station_limit, time_resolution, sim_time):
         """
         Parameters
         ----------
@@ -35,10 +39,14 @@ class Station(Model):
         num_group4 : int
         num_battery: int
         num_charger: int
+        limit: int
         time_resolution: int
         sim_time: int
         """
         super().__init__()
+
+        # Station-------------------------------------------------------------------------------------------
+        self.batt_power = 0
 
         # Simulation----------------------------------------------------------------------------------------
 
@@ -66,12 +74,13 @@ class Station(Model):
         counter = 0
         for vehicle_type, vehicle_num in vehicles.items():
             for num in range(vehicle_num):
-                obj = eval(vehicle_type)(unique_id=counter + num, station=self, params=self.vehicle_params)
+                obj = eval(vehicle_type)(unique_id=counter + num, station=self,
+                                         params=self.vehicle_params[vehicle_type])
                 self.schedule.add(obj)
             counter += vehicle_num
 
         for num in range(num_battery):
-            obj = Battery(unique_id=counter + num, station=self, capacity=150, soc=100)
+            obj = Battery(unique_id=counter + num, station=self, capacity=150, soc=100, limit=station_limit)
             self.schedule.add(obj)
 
         # List to contain all chargers at the station.
@@ -80,7 +89,7 @@ class Station(Model):
         # Data collector for model and agent variables.
         self.datacollector = DataCollector(
             model_reporters={'Power': self.get_station_power, 'Time': 'step_time'},
-            agent_reporters={'Soc': 'soc', 'Arrival': 'arrival'}
+            agent_reporters={'Soc': 'soc', 'Arrival': 'arrival', 'Capacity': 'capacity', 'MaxCharge': 'max_charge'}
         )
 
     def get_station_power(self):
