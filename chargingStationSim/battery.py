@@ -13,7 +13,7 @@ class Battery(Agent):
     Class for a local battery pack.
     """
 
-    def __init__(self, unique_id, station, capacity, soc):
+    def __init__(self, unique_id, station, capacity, soc, station_limit):
         super().__init__(unique_id, station)
         """
         Parameters
@@ -25,17 +25,15 @@ class Battery(Agent):
         capacity: int
             Max kWh rating of the battery.
         soc: int
-            State of Charge of the battery.
+            Initial state of Charge of the battery.
         """
         self.station = station
         self.capacity = capacity
         self.soc = soc
-
-    def get_soc(self):
-        """
-        Returns the current SOC of the battery.
-        """
-        return self.soc
+        # The power limit of the station the battery is connected to.
+        self.limit = station_limit
+        # How much power the battery is currently using. Positive if discharging and negative if recharging.
+        self.power = 0
 
     def recharge(self, available):
         """
@@ -81,5 +79,9 @@ class Battery(Agent):
         """
         Battery actions to execute for the second stage of each iteration of a simulation.
         """
+        # if
+        # self.station.batt_power = self.station.get_station_power() - self.station.power_limit
         pass
+
+
 
