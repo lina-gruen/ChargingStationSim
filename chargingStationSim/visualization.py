@@ -10,19 +10,41 @@ import matplotlib.pyplot as plt
 # import matplotlib.dates as mdates
 # plt.style.use('stylename')
 from matplotlib import cycler
-# Set custom matplotlib style.
-colors = cycler('color',
-                ['#3F5D7D', '#EE6666', '#3388BB', '#9988DD',
-                 '#EECC55', '#88BB44', '#FFBBBB'])
-plt.rc('figure', facecolor='#E6E6E6', edgecolor='none'),
-plt.rc('axes', facecolor='#E6E6E6', edgecolor='none',
-       axisbelow=True, grid=True, prop_cycle=colors)
-plt.rc('grid', color='w', linestyle='solid', linewidth=1)
-plt.rc('xtick', direction='out', color='dimgray')
-plt.rc('ytick', direction='out', color='dimgray')
-plt.rc('patch', edgecolor='#E6E6E6')
-plt.rc('lines', linewidth=2)
 # from scipy.stats import sem
+
+
+def set_plotstyle():
+    """
+    Set custom matplotlib style.
+    """
+    mint = '#07bd9c'
+    orange = '#f5692c'
+    darkblue = '#3F5D7D'
+    lightblue = '#3388BB'
+    red = '#EE6666'
+    purple = '#9988DD'
+    lightgreen = '#88BB44'
+    pink = '#FFBBBB'
+    yellow = '#EECC55'
+    extra_darkgrey = '#E6E6E6'
+    darkgrey = '#444444'
+    lightgrey = (0.92, 0.92, 0.92)
+    colors = cycler('color', [darkblue, red, lightblue, purple, yellow, lightgreen, pink])
+    # plt.rc('figure', facecolor=extra_darkgrey, edgecolor='none'),
+    # plt.rc('axes', facecolor=extra_darkgrey, edgecolor='none',
+    #        axisbelow=True, grid=True, prop_cycle=colors)
+    # plt.rc('grid', color='w', linestyle='solid', linewidth=1)
+    # plt.rc('xtick', direction='out', color='dimgray')
+    # plt.rc('ytick', direction='out', color='dimgray')
+    # plt.rc('patch', edgecolor=extra_darkgrey)
+    # plt.rc('lines', linewidth=2)
+    plt.rc('axes', axisbelow=True, grid=True, edgecolor='none', labelcolor=darkgrey, prop_cycle=colors)
+    plt.rc('grid', color=lightgrey, linestyle='solid', linewidth=1)
+    plt.rc('xtick', direction='out', color=darkgrey)
+    plt.rc('ytick', direction='out', color=darkgrey)
+    plt.rc('text', color=darkgrey)
+    plt.rc('patch', edgecolor='#E6E6E6')
+    plt.rc('lines', linewidth=2)
 
 
 def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_duration=24, path=''):
