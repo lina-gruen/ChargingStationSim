@@ -67,7 +67,6 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.title('Station load')
 
         plt.savefig(f'{path}/load_plot.pdf')
-        plt.close()
 
         plt.figure()
         over_line = (mean_data['mean'] - mean_data['std'])
@@ -82,7 +81,7 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.title('Station load')
 
         plt.savefig(f'{path}/mean_load_plot.pdf')
-        plt.close()
+        plt.show()
 
         # Boxplot for mean power over all runs.
         """
@@ -120,6 +119,7 @@ def vehicle_plot(results):
     data.set_index(['iteration', 'Step'], inplace=True)
 
     # Start soc for all vehicles.
+    """
     start_soc = data.xs((0, 0), level=['iteration', 'Step'])['Soc']
     plt.figure()
     start_soc.hist(bins=range(int(data.Soc.max()) + 1))
@@ -127,6 +127,7 @@ def vehicle_plot(results):
     plt.ylabel('Number of vehicles')
     plt.title('Starts soc')
     plt.show()
+    """
 
     # Final soc of all vehicles.
     """
@@ -134,6 +135,15 @@ def vehicle_plot(results):
     plt.figure()
     end_soc.hist(bins=range(int(data.Soc.max()) + 1))
     plt.show()
+    """
+
+    # Development of the soc for all vehicles.
+    """
+    plt.figure()
+    for vehicle in range(model_params['num_vehicle']):
+        plt.plot(data.xs(vehicle, level='AgentID')['Soc'], marker='o', label=f'#{vehicle} soc')
+        plt.legend()
+        plt.show()
     """
 
     # Chosen arrival times for each vehicle.
@@ -146,13 +156,22 @@ def vehicle_plot(results):
     plt.title('Arrival times')
     plt.show()
 
-    # Development of the soc for all vehicles.
-    """
+    # Battery capacity for all vehicles.
+    capacity = data.xs((0, 0), level=['iteration', 'Step'])['Capacity']
     plt.figure()
-    for vehicle in range(model_params['num_vehicle']):
-        plt.plot(data.xs(vehicle, level='AgentID')['Soc'], marker='o', label=f'#{vehicle} soc')
-        plt.legend()
-        plt.show()
-    """
+    capacity.groupby(capacity).count().plot(kind='bar')
+    plt.xlabel('Capacity [kWh]')
+    plt.ylabel('Number of vehicles')
+    plt.title('Battery capacity')
+    plt.show()
+
+    # Max charging power for all vehicles.
+    charge = data.xs((0, 0), level=['iteration', 'Step'])['MaxCharge']
+    plt.figure()
+    charge.groupby(charge).count().plot(kind='bar')
+    plt.xlabel('Power [kW]')
+    plt.ylabel('Number of vehicles')
+    plt.title('Max charging power')
+    plt.show()
 
     return data
