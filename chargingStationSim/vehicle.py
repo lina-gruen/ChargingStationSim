@@ -118,18 +118,30 @@ class Vehicle(Agent):
     #     else:
     #         self.soc = round(new_soc, 2)
 
+    def update_charge_power(self):
+        """
+        Updates the current charging power if charger has more available power since last step in
+        case another vehicle disconnected.
+        """
+        if self.power < self.charger.accessible_power < self.target_power:
+            new_power = self.charger.accessible_power
+            self.charger.accessible_power -= (new_power - self.power)
+            self.power = new_power
+        elif self.charger.accessible_power >= self.target_power:
+            new_power = self.target_power
+            self.charger.accessible_power -= (new_power - self.power)
+            self.power = new_power
+
     def update_soc(self):
         """
         Updates the soc of the vehicle when charging.
         """
-        # Update charging power if charger has more available power since last step (another vehicle disconnected).
-        if self.power < self.charger.accessible_power < self.target_power:
-            self.power = self.charger.accessible_power
-        elif self.charger.accessible_power >= self.target_power:
-            self.power = self.target_power
-        # how many kWh can be charged in the current step with the chosen power.
+        # Update charging power if charger has more available power since last step.
+        if self.power != self.target_power:
+            self.update_charge_power()
+        # How many kWh can be charged in the current step with the chosen power.
         step_capacity = self.power * (self.resolution / 60)  # min/60=h
-
+        # Find new soc.
         new_soc = self.soc + (step_capacity / self.capacity) * 100
         if new_soc >= 100:
             self.soc = 100
@@ -280,22 +292,17 @@ class Group1(Vehicle):
         """
         Updates the soc of the vehicle when charging.
         """
-        # Update charging power if charger has more available power since last step (another vehicle disconnected).
-        if self.power < self.charger.accessible_power < self.target_power:
-            self.power = self.charger.accessible_power
-        elif self.charger.accessible_power >= self.target_power:
-            self.power = self.target_power
-        # how many kWh can be charged in the current step with the chosen power.
+        # Update charging power if charger has more available power since last step.
+        if self.power != self.target_power:
+            self.update_charge_power()
         step_capacity = self.power * (self.resolution / 60)  # min/60=h
-
         new_soc = self.soc + (step_capacity / self.capacity) * 100
-        self.charge_steps -= 1
-
+        # self.charge_steps -= 1
         if new_soc >= 100:
             self.soc = 100
             self.state['arrived'] = True
-        elif self.charge_steps == 0:
-            self.state['arrived'] = True
+        # elif self.charge_steps == 0:
+        #     self.state['arrived'] = True
         else:
             self.soc = round(new_soc, 2)
 
