@@ -24,7 +24,7 @@ num_steps = int((sim_time / time_resolution) * 60) - 1
 # Set model parameters for a simulation.
 model_params = {'num_group1': 5, 'num_group2': 20, 'num_group3': 15, 'num_group4': 10,
                 'num_battery': 0, 'num_charger': 6,
-                'time_resolution': time_resolution, 'sim_time': sim_time}
+                'station_limit': 2000, 'time_resolution': time_resolution, 'sim_time': sim_time}
 
 # Start a simulation.
 results = batch_run(
@@ -42,4 +42,4 @@ save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Mas
 # Run functions for visualization of the simulation results.
 station_data = station_plot(results, multirun=True, iterations=10, time_step=time_resolution / 60,
                             sim_duration=sim_time, path=save_path)
-# vehicle_data = vehicle_plot(results)
+vehicle_data = vehicle_plot(results)
