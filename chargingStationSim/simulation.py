@@ -8,6 +8,7 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 from chargingStationSim.station import Station
 from chargingStationSim.visualization import station_plot
 from chargingStationSim.visualization import vehicle_plot
+from chargingStationSim.visualization import set_plotstyle
 from mesa.batchrunner import batch_run
 from mesa.batchrunner import BatchRunner
 
@@ -39,6 +40,8 @@ results = batch_run(
 
 save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
 
+# Set custom matplotlib style.
+set_plotstyle()
 # Run functions for visualization of the simulation results.
 station_data = station_plot(results, multirun=True, iterations=10, time_step=time_resolution / 60,
                             sim_duration=sim_time, path=save_path)
