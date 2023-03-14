@@ -18,9 +18,6 @@ class Vehicle(Agent):
     """
     Base class for all vehicles in a vehicle fleet.
     """
-
-    default_params = {'weight': None, 'capacity': None, 'max_charge': None}
-
     def __init__(self, unique_id, station, params):
         """
         Parameters
@@ -43,15 +40,13 @@ class Vehicle(Agent):
         self.station = station
         # Time per iteration step in minutes.
         self.resolution = station.resolution
-        self.weight = params['weight']
-        self.capacity = params['capacity']
-        self.max_charge = params['max_charge']
+        # Set the battery capacity and maximum charging power for the vehicle.
+        self.capacity, self.max_charge = self.get_params(params)
         # Arrival time at charging station.
         self.arrival = self.get_arrival()
         # State of Charge of the vehicle battery.
         self.soc = self.get_soc()
-        # kWh needed for the vehicle.
-        # self.demand = 0
+        # Wished charging power when searching for a charger.
         self.target_power = self.max_charge
         # The power the vehicle is currently charging with.
         self.power = 0
@@ -59,6 +54,8 @@ class Vehicle(Agent):
         self.charger = None
         # Current state of the vehicle.
         self.state = {'charging': False, 'arrived': False, 'waiting': False}
+        # kWh needed for the vehicle.
+        # self.demand = 0
 
     @staticmethod
     def get_soc():
@@ -70,7 +67,27 @@ class Vehicle(Agent):
         New soc for the vehicle.
         """
         # random.randint(0, 90)
+        # Gamma distribution with chosen parameter.
         return rand_generator.gamma(shape=3, scale=6)
+
+    @staticmethod
+    def get_params(params):
+        """
+        Finds a battery capacity and maximum charging power for the vehicle from a probability distribution.
+
+        Parameters
+        ----------
+        params: dict
+            Contains mean values for capacity and max_charge.
+
+        Returns
+        -------
+        Chosen battery capacity and maximum charging power
+        """
+        # Normal distribution with chosen mean and standard deviation.
+        capacity = rand_generator.choice(params['capacity'])
+        max_charge = rand_generator.choice(params['max_charge'])
+        return capacity, max_charge
 
     def get_arrival(self):
         """
@@ -83,6 +100,7 @@ class Vehicle(Agent):
         # arrival_hour = random.randint(0, 23)
         # arrival_step = random.randint((arrival_hour * (60 / self.resolution)) + 1,
         #                              (arrival_hour + 1) * (60 / self.resolution))
+        # Random choice from list with probability weights in p.
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
 
