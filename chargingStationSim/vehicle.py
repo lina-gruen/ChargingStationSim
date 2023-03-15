@@ -6,7 +6,6 @@ The file contains the Vehicle class
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
-import pandas as pd
 from numpy.random import default_rng
 import random
 
@@ -18,6 +17,29 @@ class Vehicle(Agent):
     """
     Base class for all vehicles in a vehicle fleet.
     """
+
+    # Default uniform distribution for the arrival times of vehicles in a day.
+    arrival_dist = [1] * (60*24)
+
+    @classmethod
+    def set_arrival_dist(cls, dist):
+        """
+        Sets new probability distribution for the arrival in each subclass.
+
+        Parameters
+        ----------
+        dist: list
+            weights for the arrival probability for each hour.
+        """
+        new_dist = []
+        if not len(dist) == 60:
+            raise KeyError('Invalid length given for arrival distribution.')
+        else:
+            for weight in dist:
+                for _ in range(60):
+                    new_dist.append(weight)
+            cls.arrival_dist = new_dist
+
     def __init__(self, unique_id, station, params):
         """
         Parameters
@@ -41,24 +63,22 @@ class Vehicle(Agent):
         # Time per iteration step in minutes.
         self.resolution = station.resolution
         # Set the battery capacity and maximum charging power for the vehicle.
-        self.capacity, self.max_charge = self.get_params(params)
+        self.capacity, self.max_charge = self.set_params(params)
+        # Wished charging power when searching for a charger.
+        self.target_power = self.max_charge
         # Arrival time at charging station.
         self.arrival = self.get_arrival()
         # State of Charge of the vehicle battery.
-        self.soc = self.get_soc()
-        # Wished charging power when searching for a charger.
-        self.target_power = self.max_charge
+        self.soc = self.get_start_soc()
         # The power the vehicle is currently charging with.
         self.power = 0
         # The charger the vehicle is using. None if not charging.
         self.charger = None
         # Current state of the vehicle.
         self.state = {'charging': False, 'arrived': False, 'waiting': False}
-        # kWh needed for the vehicle.
-        # self.demand = 0
 
     @staticmethod
-    def get_soc():
+    def get_start_soc():
         """
         Finds a soc for the vehicle from a probability distribution.
 
@@ -70,7 +90,7 @@ class Vehicle(Agent):
         return rand_generator.gamma(shape=3, scale=6)
 
     @staticmethod
-    def get_params(params):
+    def set_params(params):
         """
         Finds a battery capacity and maximum charging power for the vehicle from a probability distribution.
 
@@ -202,8 +222,10 @@ class Vehicle(Agent):
         if self.state['charging']:
             self.update_soc()
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-class Group1(Vehicle):
+
+class ExternalFastCharge(Vehicle):
     """
     Subclass for all group1 vehicles.
     """
@@ -254,8 +276,10 @@ class Group1(Vehicle):
         else:
             self.soc = round(new_soc, 2)
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-class Group2(Vehicle):
+
+class ExternalBreak(Vehicle):
     """
     Subclass for all group2 vehicles.
     """
@@ -274,8 +298,10 @@ class Group2(Vehicle):
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-class Group3(Vehicle):
+
+class ExternalDepot(Vehicle):
     """
     Subclass for all group3 vehicles.
     """
@@ -296,8 +322,10 @@ class Group3(Vehicle):
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
 
+# ----------------------------------------------------------------------------------------------------------------------
 
-class Group4(Vehicle):
+
+class Internal(Vehicle):
     """
     Subclass for all group4 vehicles.
     """
