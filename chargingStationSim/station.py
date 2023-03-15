@@ -7,12 +7,14 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from chargingStationSim.battery import Battery
 from chargingStationSim.charger import Charger
-from chargingStationSim.vehicle import Group1, Group2, Group3, Group4
+from chargingStationSim.vehicle import ExternalFastCharge, ExternalBreak, ExternalDepot, Internal
 from mesa import Model
 # from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
 from mesa.datacollection import DataCollector
 import pandas as pd
+
+
 # import random
 # random.seed(1234)
 
@@ -22,21 +24,20 @@ class Station(Model):
     Class for a charging station.
     """
 
-    # Parameters for each vehicle group containing mean values to use in a probability distribution.
-    vehicle_params = {'Group1': {'weight': None, 'capacity': (100, 150, 200), 'max_charge': (150, 200, 250)},
-                      'Group2': {'weight': None, 'capacity': (100, 150, 200), 'max_charge': (150, 200, 250)},
-                      'Group3': {'weight': None, 'capacity': (200, 250, 300), 'max_charge': (200, 250, 350)},
-                      'Group4': {'weight': None, 'capacity': (250, 300, 350), 'max_charge': (350, 400, 450)}}
+    # vehicle_params = {'ExternalFastCharge': {'weight': None, 'capacity': (100, 150, 200), 'max_charge': (450, 450)},
+    #                   'ExternalBreak': {'weight': None, 'capacity': (100, 150, 200), 'max_charge': (450, 450)},
+    #                   'ExternalDepot': {'weight': None, 'capacity': (200, 250, 300), 'max_charge': (450, 450)},
+    #                   'Internal': {'weight': None, 'capacity': (250, 300, 350), 'max_charge': (450, 450)}}
 
-    def __init__(self, num_group1, num_group2, num_group3, num_group4, num_battery, num_charger,
+    def __init__(self, num_fastcharge, num_break, num_depot, num_internal, num_battery, num_charger,
                  station_limit, time_resolution, sim_time):
         """
         Parameters
         ----------
-        num_group1 : int
-        num_group2 : int
-        num_group3 : int
-        num_group4 : int
+        num_fastcharge : int
+        num_break : int
+        num_depot : int
+        num_internal : int
         num_battery: int
         num_charger: int
         limit: int
@@ -45,10 +46,23 @@ class Station(Model):
         """
         super().__init__()
 
-        # Station-------------------------------------------------------------------------------------------
+        # Station-------------------------------------------------------------------------------------------------------
         self.batt_power = 0
 
-        # Simulation----------------------------------------------------------------------------------------
+        # Parameters for each vehicle group containing mean values to use in a probability distribution.
+        vehicle_params = {ExternalFastCharge: {'capacity': (100, 150, 200), 'max_charge': (150, 200, 250),
+                                               'arrival_dist': [1] * 60},
+                          ExternalBreak: {'capacity': (100, 150, 200), 'max_charge': (150, 200, 250),
+                                          'arrival_dist': [1] * 60},
+                          ExternalDepot: {'capacity': (200, 250, 300), 'max_charge': (200, 250, 350),
+                                          'arrival_dist': [1] * 60},
+                          Internal: {'capacity': (250, 300, 350), 'max_charge': (350, 400, 450),
+                                     'arrival_dist': [1] * 60}}
+
+        num_vehicles = {ExternalFastCharge: num_fastcharge, ExternalBreak: num_break, ExternalDepot: num_depot,
+                        Internal: num_internal}
+
+        # Simulation----------------------------------------------------------------------------------------------------
 
         # Make a scheduler that splits each iteration into two steps
         vehicle_steps = ['step_1', 'step_2']
@@ -67,17 +81,16 @@ class Station(Model):
         # The timestamp for the current step in a simulation.
         self.step_time = None
 
-        # Agents--------------------------------------------------------------------------------------------
-
-        vehicles = {'Group1': num_group1, 'Group2': num_group2, 'Group3': num_group3, 'Group4': num_group4}
+        # Agents--------------------------------------------------------------------------------------------------------
 
         counter = 0
-        for vehicle_type, vehicle_num in vehicles.items():
+        for vehicle_type, vehicle_num in num_vehicles.items():
             for num in range(vehicle_num):
-                obj = eval(vehicle_type)(unique_id=counter + num, station=self,
-                                         params=self.vehicle_params[vehicle_type])
+                obj = vehicle_type(unique_id=counter + num, station=self, params=vehicle_params[vehicle_type])
                 self.schedule.add(obj)
             counter += vehicle_num
+            # Set the probability distribution for arrival times for the current vehicle type.
+            vehicle_type.set_arrival_dist(vehicle_params[vehicle_type]['arrival_dist'])
 
         for num in range(num_battery):
             obj = Battery(unique_id=counter + num, station=self, capacity=150, soc=100, limit=station_limit)
@@ -101,6 +114,8 @@ class Station(Model):
 
         """
         power_sum = [charger.max_power - charger.accessible_power for charger in self.charge_list]
+        if sum(power_sum) < 0:
+            print('Negative')
         return sum(power_sum)
 
     def step(self):
