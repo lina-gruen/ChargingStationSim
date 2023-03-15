@@ -66,7 +66,6 @@ class Vehicle(Agent):
         -------
         New soc for the vehicle.
         """
-        # random.randint(0, 90)
         # Gamma distribution with chosen parameter.
         return rand_generator.gamma(shape=3, scale=6)
 
@@ -97,26 +96,9 @@ class Vehicle(Agent):
         -------
         New arrival time for the vehicle.
         """
-        # arrival_hour = random.randint(0, 23)
-        # arrival_step = random.randint((arrival_hour * (60 / self.resolution)) + 1,
-        #                              (arrival_hour + 1) * (60 / self.resolution))
         # Random choice from list with probability weights in p.
         arrival_step = rand_generator.choice(self.station.timestamps, p=None)
         return arrival_step
-
-    # def drive(self):
-    #     """
-    #     Updates the soc of the vehicle when driving.
-    #     """
-    #     speed = 60  # km/h
-    #     driving_demand = (self.efficiency * speed * self.time) / 60
-    #     new_soc = self.soc - (driving_demand / self.capacity) * 100
-    #     if new_soc <= 0:
-    #         self.soc = 0
-    #         self.state['driving'] = False
-    #         self.state['waiting'] = True
-    #     else:
-    #         self.soc = round(new_soc, 2)
 
     def update_charge_power(self):
         """
@@ -186,34 +168,6 @@ class Vehicle(Agent):
         else:
             self.connect_charger(charger[0], self.target_power)
 
-    # def find_charger(self):
-    #     """
-    #     Uses charger if one is free, else waits until next simulation step to check again.
-    #     """
-
-    #     def charger_found(choice):
-    #         if self.state['waiting']:
-    #             self.state['waiting'] = False
-    #         self.state['charging'] = True
-    #         self.charger = choice
-    #         self.charger.add_vehicle()
-    #         self.charger.update_power()
-
-    #     best_choice = (None, 0)
-    #     for charger in self.station.charge_list:
-    #         if charger.available:
-    #             power = charger.check_new_power()
-    #             if power == charger.max_power:
-    #                 charger_found(charger)
-    #                 break
-    #             elif power > best_choice[1]:
-    #                 best_choice = (charger, power)
-
-    #     if not self.state['charging'] and best_choice[0] is not None:
-    #         charger_found(best_choice[0])
-    #     elif not self.state['charging'] and not self.state['waiting']:
-    #         self.state['waiting'] = True
-
     def check_vehicle(self):
         """
         Checks which action to take for a vehicle.
@@ -244,12 +198,6 @@ class Vehicle(Agent):
         """
         Finds out what action to take for the vehicle and charges if the vehicle is connected to a charger.
         """
-        # Update the power of all chargers once before charging all vehicles.
-        # if not self.station.power_updated:
-        #     for charger in self.station.charge_list:
-        #         charger.update_power()
-        #     self.station.power_updated = True
-
         self.check_vehicle()
         if self.state['charging']:
             self.update_soc()
