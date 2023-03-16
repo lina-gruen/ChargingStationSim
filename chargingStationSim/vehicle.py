@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-The file contains the Vehicle class
+The file contains the Vehicle class.
 """
 
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
@@ -8,9 +8,8 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 from mesa import Agent
 import numpy as np
 from numpy.random import default_rng
-import random
 
-random.seed(1256)
+# Seed for randomization.
 rand_generator = default_rng(seed=1256)
 
 
@@ -34,15 +33,15 @@ class Vehicle(Agent):
         dist: list
             weights for the arrival probability for each hour.
         """
-        new_dist = []
         if not len(dist) == 24:
             raise KeyError('Invalid length given for arrival distribution.')
         else:
+            extended_dist = []
             for weight in dist:
                 for _ in range(int(60 / resolution)):
-                    new_dist.append(weight)
-            new_dist = new_dist / np.sum(new_dist)
-            cls.arrival_dist = new_dist
+                    extended_dist.append(weight)
+            extended_dist = extended_dist / np.sum(extended_dist)
+            cls.arrival_dist = extended_dist
 
     def __init__(self, unique_id, station, params):
         """
@@ -237,18 +236,8 @@ class ExternalFastCharge(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
+        # self.target_power = None
         self.charge_steps = self.get_charge_steps()
-
-    # def get_arrival(self):
-    #     """
-    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-    #
-    #     Returns
-    #     -------
-    #     New arrival time for the vehicle.
-    #     """
-    #     arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-    #     return arrival_step
 
     def get_charge_steps(self):
         """
@@ -271,12 +260,13 @@ class ExternalFastCharge(Vehicle):
             self.update_charge_power()
         step_capacity = self.power * (self.resolution / 60)  # min/60=h
         new_soc = self.soc + (step_capacity / self.capacity) * 100
-        # self.charge_steps -= 1
+        self.charge_steps -= 1
         if new_soc >= 100:
             self.soc = 100
             self.state['arrived'] = True
-        # elif self.charge_steps == 0:
-        #     self.state['arrived'] = True
+        elif self.charge_steps == 0:
+            self.state['arrived'] = True
+            self.soc = round(new_soc, 2)
         else:
             self.soc = round(new_soc, 2)
 
@@ -291,16 +281,39 @@ class ExternalBreak(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
-    # def get_arrival(self):
-    #     """
-    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-    #
-    #     Returns
-    #     -------
-    #     New arrival time for the vehicle.
-    #     """
-    #     arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-    #     return arrival_step
+        # self.target_power = None
+        self.charge_steps = self.get_charge_steps()
+
+    def get_charge_steps(self):
+        """
+        Finds the maximum amount of steps the vehicle wants to charge from a probability distribution.
+
+        Returns
+        -------
+        Max steps available for charging.
+        """
+        time = rand_generator.normal(loc=45, scale=2)
+        steps = int(time / self.resolution)
+        return steps
+
+    def update_soc(self):
+        """
+        Updates the soc of the vehicle when charging.
+        """
+        # Update charging power if charger has more available power since last step.
+        if self.power != self.target_power:
+            self.update_charge_power()
+        step_capacity = self.power * (self.resolution / 60)  # min/60=h
+        new_soc = self.soc + (step_capacity / self.capacity) * 100
+        self.charge_steps -= 1
+        if new_soc >= 100:
+            self.soc = 100
+            self.state['arrived'] = True
+        elif self.charge_steps == 0:
+            self.state['arrived'] = True
+            self.soc = round(new_soc, 2)
+        else:
+            self.soc = round(new_soc, 2)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -315,17 +328,6 @@ class ExternalDepot(Vehicle):
 
         # self.target_power = None
 
-    # def get_arrival(self):
-    #     """
-    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-    #
-    #     Returns
-    #     -------
-    #     New arrival time for the vehicle.
-    #     """
-    #     arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-    #     return arrival_step
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -338,15 +340,3 @@ class Internal(Vehicle):
         super().__init__(unique_id, station, params)
 
         # self.target_power = None
-
-    # def get_arrival(self):
-    #     """
-    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-    #
-    #     Returns
-    #     -------
-    #     New arrival time for the vehicle.
-    #     """
-    #     arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-    #     return arrival_step
-
