@@ -6,6 +6,7 @@ The file contains the Vehicle class
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
+import numpy as np
 from numpy.random import default_rng
 import random
 
@@ -22,22 +23,25 @@ class Vehicle(Agent):
     arrival_dist = [1] * (60*24)
 
     @classmethod
-    def set_arrival_dist(cls, dist):
+    def set_arrival_dist(cls, dist, resolution):
         """
         Sets new probability distribution for the arrival in each subclass.
 
         Parameters
         ----------
+        resolution: int
+            time resolution of each step in the simulation in minutes.
         dist: list
             weights for the arrival probability for each hour.
         """
         new_dist = []
-        if not len(dist) == 60:
+        if not len(dist) == 24:
             raise KeyError('Invalid length given for arrival distribution.')
         else:
             for weight in dist:
-                for _ in range(60):
+                for _ in range(int(60 / resolution)):
                     new_dist.append(weight)
+            new_dist = new_dist / np.sum(new_dist)
             cls.arrival_dist = new_dist
 
     def __init__(self, unique_id, station, params):
@@ -117,7 +121,7 @@ class Vehicle(Agent):
         New arrival time for the vehicle.
         """
         # Random choice from list with probability weights in p.
-        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+        arrival_step = rand_generator.choice(self.station.timestamps, p=self.arrival_dist)
         return arrival_step
 
     def update_charge_power(self):
@@ -235,16 +239,16 @@ class ExternalFastCharge(Vehicle):
 
         self.charge_steps = self.get_charge_steps()
 
-    def get_arrival(self):
-        """
-        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-
-        Returns
-        -------
-        New arrival time for the vehicle.
-        """
-        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-        return arrival_step
+    # def get_arrival(self):
+    #     """
+    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+    #
+    #     Returns
+    #     -------
+    #     New arrival time for the vehicle.
+    #     """
+    #     arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+    #     return arrival_step
 
     def get_charge_steps(self):
         """
@@ -287,16 +291,16 @@ class ExternalBreak(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
-    def get_arrival(self):
-        """
-        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-
-        Returns
-        -------
-        New arrival time for the vehicle.
-        """
-        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-        return arrival_step
+    # def get_arrival(self):
+    #     """
+    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+    #
+    #     Returns
+    #     -------
+    #     New arrival time for the vehicle.
+    #     """
+    #     arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+    #     return arrival_step
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -311,16 +315,16 @@ class ExternalDepot(Vehicle):
 
         # self.target_power = None
 
-    def get_arrival(self):
-        """
-        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-
-        Returns
-        -------
-        New arrival time for the vehicle.
-        """
-        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-        return arrival_step
+    # def get_arrival(self):
+    #     """
+    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+    #
+    #     Returns
+    #     -------
+    #     New arrival time for the vehicle.
+    #     """
+    #     arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+    #     return arrival_step
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -335,14 +339,14 @@ class Internal(Vehicle):
 
         # self.target_power = None
 
-    def get_arrival(self):
-        """
-        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-
-        Returns
-        -------
-        New arrival time for the vehicle.
-        """
-        arrival_step = rand_generator.choice(self.station.timestamps, p=None)
-        return arrival_step
+    # def get_arrival(self):
+    #     """
+    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+    #
+    #     Returns
+    #     -------
+    #     New arrival time for the vehicle.
+    #     """
+    #     arrival_step = rand_generator.choice(self.station.timestamps, p=None)
+    #     return arrival_step
 
