@@ -23,7 +23,7 @@ num_steps = int((sim_time / time_resolution) * 60) - 1
 # vehicles = (('Group_1', 5), ('Group_2', 20), ('Group_3', 15), ('Group_4', 10))
 
 # Set model parameters for a simulation.
-model_params = {'num_group1': 5, 'num_group2': 20, 'num_group3': 15, 'num_group4': 10,
+model_params = {'num_fastcharge': 5, 'num_break': 20, 'num_depot': 15, 'num_internal': 10,
                 'num_battery': 0, 'num_charger': 6,
                 'station_limit': 2000, 'time_resolution': time_resolution, 'sim_time': sim_time}
 
@@ -46,3 +46,9 @@ set_plotstyle()
 station_data = station_plot(results, multirun=True, iterations=10, time_step=time_resolution / 60,
                             sim_duration=sim_time, path=save_path)
 vehicle_data = vehicle_plot(results)
+
+# for power in station_data['Power']:
+#     if power < 0:
+#         print(True)
+#     else:
+#         print(False)
