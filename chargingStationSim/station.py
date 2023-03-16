@@ -114,8 +114,6 @@ class Station(Model):
 
         """
         power_sum = [charger.max_power - charger.accessible_power for charger in self.charge_list]
-        if sum(power_sum) < 0:
-            print('Negative')
         return sum(power_sum)
 
     def step(self):
@@ -128,8 +126,6 @@ class Station(Model):
         self.datacollector.collect(self)
         # Iterate through all agents (vehicles, batteries) in the model.
         self.schedule.step()
-        # Reset variable for the next step. Checks if the power of each charger is updated.
-        # self.power_updated = False
 
 
 if __name__ == '__main__':
