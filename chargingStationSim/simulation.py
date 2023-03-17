@@ -10,7 +10,10 @@ from chargingStationSim.visualization import station_plot
 from chargingStationSim.visualization import vehicle_plot
 from chargingStationSim.visualization import set_plotstyle
 from mesa.batchrunner import batch_run
-from mesa.batchrunner import BatchRunner
+import time
+
+# record start time
+start = time.time()
 
 # Duration of simulation in hours.
 sim_time = 24
@@ -19,12 +22,9 @@ time_resolution = 10
 # Number of steps the simulation requires.
 num_steps = int((sim_time / time_resolution) * 60) - 1
 
-# Set number of vehicles for each vehicle type.
-# vehicles = (('Group_1', 5), ('Group_2', 20), ('Group_3', 15), ('Group_4', 10))
-
 # Set model parameters for a simulation.
-model_params = {'num_fastcharge': 5, 'num_break': 20, 'num_depot': 15, 'num_internal': 10,
-                'num_battery': 0, 'num_charger': 6,
+model_params = {'num_fastcharge': 15, 'num_break': 25, 'num_night': 25, 'num_internal': 67,
+                'num_battery': 0, 'num_charger': 20,
                 'station_limit': 2000, 'time_resolution': time_resolution, 'sim_time': sim_time}
 
 # Start a simulation.
@@ -45,10 +45,16 @@ set_plotstyle()
 # Run functions for visualization of the simulation results.
 station_data = station_plot(results, multirun=True, iterations=10, time_step=time_resolution / 60,
                             sim_duration=sim_time, path=save_path)
-vehicle_data = vehicle_plot(results)
+# vehicle_data = vehicle_plot(results)
 
 # for power in station_data['Power']:
 #     if power < 0:
 #         print(True)
 #     else:
 #         print(False)
+
+# record end time
+end = time.time()
+
+print("The time of execution of above program is :",
+      (end-start), "s")
