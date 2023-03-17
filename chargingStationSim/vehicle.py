@@ -67,12 +67,16 @@ class Vehicle(Agent):
         self.resolution = station.resolution
         # Set the battery capacity and maximum charging power for the vehicle.
         self.capacity, self.max_charge = self.set_params(params)
-        # Wished charging power when searching for a charger.
-        self.target_power = self.max_charge
-        # Arrival time at charging station.
-        self.arrival = self.get_arrival()
         # State of Charge of the vehicle battery.
         self.soc = self.get_start_soc()
+        # Arrival time at charging station.
+        self.arrival = self.get_arrival()
+        # Maximum steps that the vehicle charges.
+        self.charge_steps = self.get_charge_steps(mean=45, std=2)
+        # Wished charging power when searching for a charger.
+        self.target_power = None
+        # Wished end soc when charging.
+        self.target_soc = None
         # The power the vehicle is currently charging with.
         self.power = 0
         # The charger the vehicle is using. None if not charging.
@@ -123,6 +127,18 @@ class Vehicle(Agent):
         arrival_step = rand_generator.choice(self.station.timestamps, p=self.arrival_dist)
         return arrival_step
 
+    def get_charge_steps(self, mean, std):
+        """
+        Finds the maximum amount of steps the vehicle wants to charge from a probability distribution.
+
+        Returns
+        -------
+        Max steps available for charging.
+        """
+        time = rand_generator.normal(loc=mean, scale=std)
+        steps = int(time / self.resolution)
+        return steps
+
     def update_charge_power(self):
         """
         Updates the current charging power if charger has more available power since last step in
@@ -148,9 +164,13 @@ class Vehicle(Agent):
         step_capacity = self.power * (self.resolution / 60)  # min/60=h
         # Find new soc.
         new_soc = self.soc + (step_capacity / self.capacity) * 100
-        if new_soc >= 100:
-            self.soc = 100
+        self.charge_steps -= 1
+        if new_soc >= self.target_soc:
+            self.soc = self.target_soc
             self.state['arrived'] = True
+        elif self.charge_steps == 0:
+            self.state['arrived'] = True
+            self.soc = round(new_soc, 2)
         else:
             self.soc = round(new_soc, 2)
 
@@ -171,7 +191,6 @@ class Vehicle(Agent):
         self.charger = char_choice
         self.power = pow_choice
         self.charger.add_vehicle(self.power)
-        # self.charger.update_power()
 
     def find_charger(self):
         """
@@ -236,39 +255,9 @@ class ExternalFastCharge(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
-        # self.target_power = None
-        self.charge_steps = self.get_charge_steps()
-
-    def get_charge_steps(self):
-        """
-        Finds the maximum amount of steps the vehicle wants to charge from a probability distribution.
-
-        Returns
-        -------
-        Max steps available for charging.
-        """
-        time = rand_generator.normal(loc=45, scale=2)
-        steps = int(time / self.resolution)
-        return steps
-
-    def update_soc(self):
-        """
-        Updates the soc of the vehicle when charging.
-        """
-        # Update charging power if charger has more available power since last step.
-        if self.power != self.target_power:
-            self.update_charge_power()
-        step_capacity = self.power * (self.resolution / 60)  # min/60=h
-        new_soc = self.soc + (step_capacity / self.capacity) * 100
-        self.charge_steps -= 1
-        if new_soc >= 100:
-            self.soc = 100
-            self.state['arrived'] = True
-        elif self.charge_steps == 0:
-            self.state['arrived'] = True
-            self.soc = round(new_soc, 2)
-        else:
-            self.soc = round(new_soc, 2)
+        self.target_power = self.max_charge
+        self.target_soc = 80
+        self.charge_steps = self.get_charge_steps(mean=25, std=2)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -281,44 +270,14 @@ class ExternalBreak(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
-        # self.target_power = None
-        self.charge_steps = self.get_charge_steps()
-
-    def get_charge_steps(self):
-        """
-        Finds the maximum amount of steps the vehicle wants to charge from a probability distribution.
-
-        Returns
-        -------
-        Max steps available for charging.
-        """
-        time = rand_generator.normal(loc=45, scale=2)
-        steps = int(time / self.resolution)
-        return steps
-
-    def update_soc(self):
-        """
-        Updates the soc of the vehicle when charging.
-        """
-        # Update charging power if charger has more available power since last step.
-        if self.power != self.target_power:
-            self.update_charge_power()
-        step_capacity = self.power * (self.resolution / 60)  # min/60=h
-        new_soc = self.soc + (step_capacity / self.capacity) * 100
-        self.charge_steps -= 1
-        if new_soc >= 100:
-            self.soc = 100
-            self.state['arrived'] = True
-        elif self.charge_steps == 0:
-            self.state['arrived'] = True
-            self.soc = round(new_soc, 2)
-        else:
-            self.soc = round(new_soc, 2)
+        self.target_power = self.max_charge
+        self.target_soc = 80
+        self.charge_steps = self.get_charge_steps(mean=45, std=2)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class ExternalDepot(Vehicle):
+class ExternalNight(Vehicle):
     """
     Subclass for all group3 vehicles.
     """
@@ -326,7 +285,9 @@ class ExternalDepot(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
-        # self.target_power = None
+        self.target_power = 60
+        self.target_soc = 100
+        self.charge_steps = self.get_charge_steps(mean=600, std=2)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -339,4 +300,7 @@ class Internal(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
-        # self.target_power = None
+        self.target_power = 50
+        self.target_soc = 100
+        self.charge_steps = self.get_charge_steps(mean=350, std=2)
+
