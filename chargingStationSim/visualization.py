@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-This file contains visualization of simulation results.
+This file contains the visualization of simulation results.
 """
 
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
@@ -74,6 +74,8 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
             plt.plot(data.xs(iter_num, level='iteration')['Power'])
         """
 
+# ----------------------------------------------------------------------------------------------------------------------
+
         # Mean power and standard deviation for all runs.
         mean_data = pd.DataFrame()
         mean_data['mean'] = data.groupby(data['Time'].dt.time)['Power'].mean()
@@ -88,7 +90,10 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.ylabel('Power [kW]')
         plt.title('Station load')
 
-        plt.savefig(f'{path}/load_plot.pdf')
+        # plt.savefig(f'{path}/load_plot.pdf')
+        plt.show()
+
+# ----------------------------------------------------------------------------------------------------------------------
 
         plt.figure()
         over_line = (mean_data['mean'] - mean_data['std'])
@@ -102,8 +107,10 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.ylabel('Power [kW]')
         plt.title('Station load')
 
-        plt.savefig(f'{path}/mean_load_plot.pdf')
+        # plt.savefig(f'{path}/mean_load_plot.pdf')
         plt.show()
+
+# ----------------------------------------------------------------------------------------------------------------------
 
         # Boxplot for mean power over all runs.
         """
@@ -112,7 +119,8 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.show()
         """
 
-        """
+# ----------------------------------------------------------------------------------------------------------------------
+
         # Duration plot for mean power over all runs.
         dur_data = mean_data
         dur_data['interval'] = time_step  # time per step in hours.
@@ -121,16 +129,15 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         dur_data['percentage'] = dur_data['duration'] * 100 / sim_duration
         dur_data.set_index('percentage', inplace=True)
         reduced_dur = dur_data['mean'].drop_duplicates()
-        """
 
-        """
         plt.figure()
         reduced_dur.plot()
         plt.xlabel('Percentage [%]')
         plt.ylabel('Load [kW]')
         plt.title('Duration curve')
+
+        # plt.savefig(f'{path}/duration_plot.pdf')
         plt.show()
-        """
 
     return data
 
@@ -178,6 +185,7 @@ def vehicle_plot(results):
     plt.title('Arrival times')
     plt.show()
 
+    """
     # Battery capacity for all vehicles.
     capacity = data.xs((0, 0), level=['iteration', 'Step'])['Capacity']
     plt.figure()
@@ -186,7 +194,9 @@ def vehicle_plot(results):
     plt.ylabel('Number of vehicles')
     plt.title('Battery capacity')
     plt.show()
+    """
 
+    """
     # Max charging power for all vehicles.
     charge = data.xs((0, 0), level=['iteration', 'Step'])['MaxCharge']
     plt.figure()
@@ -195,5 +205,6 @@ def vehicle_plot(results):
     plt.ylabel('Number of vehicles')
     plt.title('Max charging power')
     plt.show()
+    """
 
     return data
