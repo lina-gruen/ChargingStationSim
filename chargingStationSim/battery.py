@@ -28,46 +28,62 @@ class Battery(Agent):
             Initial state of Charge of the battery.
         """
         self.station = station
+        # Time per iteration step in minutes.
+        self.resolution = station.resolution
+        # Capacity of the battery in kWh.
         self.capacity = capacity
+        # State of Charge of the vehicle battery in percentage.
         self.soc = soc
-        # The power limit of the station the battery is connected to.
+        # Upper limit for the soc of the battery.
+        self.upper_soc_limit = 80
+        # Lower limit for the soc of the battery.
+        self.lower_soc_limit = 10
+        # The upper power limit at the station for when the battery starts discharging.
         self.limit = station_limit
-        # How much power the battery is currently using. Positive if discharging and negative if recharging.
+        # The lower power limit at the station for when the battery starts recharging.
+        self.charge_limit = station_limit / 3
+        # How much power the battery is currently using to recharge/discharge.
         self.power = 0
+        # If the battery is drained or full.
+        self.empty = False
+        self.full = True
 
-    def recharge(self, available):
-        """
-        Recharge the battery a certain amount.
+        self.arrival = None
+        self.max_charge = None
 
-        Parameters
-        ----------
-        available: int
-            Amount of kWh given to the battery.
+    def recharge(self):
         """
-        if available < 0:
-            raise ValueError('Battery was given negative amount of kWh.')
-        new_soc = self.soc + (available / self.capacity)*100
-        if new_soc > 100:
-            self.soc = 100
+        Recharge the battery a certain amount to consume local power.
+        """
+        # How many kWh can be charged in the current step with the chosen power.
+        step_capacity = self.power * (self.resolution / 60)  # min/60=h
+        new_soc = self.soc + (step_capacity / self.capacity)*100
+        if new_soc > self.upper_soc_limit:
+            # Adjust the power to the amount we need to get exactly to the upper soc limit.
+            self.power = -(self.lower_soc_limit - self.soc) * 0.6 * (self.capacity / self.resolution)
+            self.soc = self.upper_soc_limit
+            self.full = True
         else:
             self.soc = round(new_soc, 2)
+            if self.empty:
+                self.empty = False
 
-    def discharge(self, demand):
+    def discharge(self):
         """
-        Discharge the battery a certain amount.
-
-        Parameters
-        ----------
-        demand: int
-            Amount of kWh needed from the battery.
+        Discharge the battery a certain amount to give the station local power.
         """
-        if demand < 0:
-            raise ValueError('Demanded negative amount of kWh from battery.')
-        new_soc = self.soc - (demand / self.capacity)*100
-        if new_soc < 0:
-            self.soc = 0
+        # How many kWh can the battery give in the current step with the chosen power.
+        step_capacity = self.power * (self.resolution / 60)  # min/60=h
+        new_soc = self.soc - (step_capacity / self.capacity)*100
+        if new_soc < self.lower_soc_limit:
+            # Adjust the power to the amount we need to get exactly to the lower soc limit.
+            self.power = (self.soc - self.lower_soc_limit) * 0.6 * (self.capacity / self.resolution)
+            self.soc = self.lower_soc_limit
+            self.empty = True
         else:
             self.soc = round(new_soc, 2)
+            if self.full:
+                self.full = False
 
     def step_1(self):
         """
@@ -79,9 +95,17 @@ class Battery(Agent):
         """
         Battery actions to execute for the second stage of each iteration of a simulation.
         """
-        # if
-        # self.station.batt_power = self.station.get_station_power() - self.station.power_limit
-        pass
+        station_power = self.station.get_station_power()
+        if station_power > self.limit and not self.empty:
+            self.power = station_power - self.limit
+            self.discharge()
+            self.station.batt_power = self.power
+        elif station_power < self.limit and not self.full:
+            self.power = -(self.limit - station_power)
+            self.recharge()
+            self.station.batt_power = self.power
+        else:
+            self.station.batt_power = 0
 
 
 
