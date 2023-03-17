@@ -1,13 +1,13 @@
 # -*- encoding: utf-8 -*-
 """
-This file contains the Station class
+This file contains the Station class.
 """
 
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from chargingStationSim.battery import Battery
 from chargingStationSim.charger import Charger
-from chargingStationSim.vehicle import ExternalFastCharge, ExternalBreak, ExternalDepot, Internal
+from chargingStationSim.vehicle import ExternalFastCharge, ExternalBreak, ExternalNight, Internal
 from mesa import Model
 # from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
@@ -22,22 +22,30 @@ class Station(Model):
 
     # Parameters for each vehicle group containing mean values to use in a probability distribution.
     vehicle_params = {ExternalFastCharge: {'capacity': (100, 150, 200), 'max_charge': (150, 200, 250),
-                                           'arrival_dist': [1] * 24},
-                      ExternalBreak: {'capacity': (100, 150, 200), 'max_charge': (150, 200, 250),
-                                      'arrival_dist': [1, 7] * 12},
-                      ExternalDepot: {'capacity': (200, 250, 300), 'max_charge': (200, 250, 350),
-                                      'arrival_dist': [1] * 24},
-                      Internal: {'capacity': (250, 300, 350), 'max_charge': (350, 400, 450),
-                                 'arrival_dist': [1] * 24}}
+                                           'arrival_dist': [1, 1, 1, 1, 1, 1, 1, 1,
+                                                            1, 2, 2, 4, 7, 7, 4, 2,
+                                                            2, 1, 1, 1, 1, 1, 1, 1]},
+                      ExternalBreak: {'capacity': (250, 300, 350), 'max_charge': (200, 250, 350),
+                                      'arrival_dist': [1, 1, 1, 1, 1, 1, 1, 1,
+                                                       1, 2, 2, 4, 7, 7, 4, 2,
+                                                       2, 1, 1, 1, 1, 1, 1, 1]},
+                      ExternalNight: {'capacity': (250, 300, 350), 'max_charge': (350, 400, 450),
+                                      'arrival_dist': [1, 1, 1, 1, 1, 1, 1, 1,
+                                                       1, 1, 1, 4, 7, 7, 2, 4,
+                                                       7, 7, 2, 2, 1, 1, 1, 1]},
+                      Internal: {'capacity': (200, 250, 300), 'max_charge': (200, 250, 350),
+                                 'arrival_dist': [1, 1, 1, 1, 1, 1, 1, 1,
+                                                  1, 1, 1, 1, 1, 1, 1, 1,
+                                                  2, 4, 7, 7, 4, 2, 1, 1]}}
 
-    def __init__(self, num_fastcharge, num_break, num_depot, num_internal, num_battery, num_charger,
+    def __init__(self, num_fastcharge, num_break, num_night, num_internal, num_battery, num_charger,
                  station_limit, time_resolution, sim_time):
         """
         Parameters
         ----------
         num_fastcharge : int
         num_break : int
-        num_depot : int
+        num_night : int
         num_internal : int
         num_battery: int
         num_charger: int
@@ -50,7 +58,7 @@ class Station(Model):
         # Station-------------------------------------------------------------------------------------------------------
         self.batt_power = 0
 
-        num_vehicles = {ExternalFastCharge: num_fastcharge, ExternalBreak: num_break, ExternalDepot: num_depot,
+        num_vehicles = {ExternalFastCharge: num_fastcharge, ExternalBreak: num_break, ExternalNight: num_night,
                         Internal: num_internal}
 
         # Simulation----------------------------------------------------------------------------------------------------
@@ -68,7 +76,7 @@ class Station(Model):
         # List of timestamps for each simulation step.
         self.timestamps = pd.Series(pd.date_range('20230101 00:00:00',
                                                   periods=self.sim_time * (60 / self.resolution),
-                                                  freq=f'{self.resolution}T'))  # .dt.time
+                                                  freq=f'{self.resolution}T'))
         # The timestamp for the current step in a simulation.
         self.step_time = None
 
