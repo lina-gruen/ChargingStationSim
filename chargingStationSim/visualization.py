@@ -47,7 +47,7 @@ def set_plotstyle():
     plt.rc('lines', linewidth=2)
 
 
-def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_duration=24, path=''):
+def station_plot(results, multirun=False, flexibility=True, iterations=0, time_step=10 / 60, sim_duration=24, path=''):
     data = pd.DataFrame(results)
     # Convert 10 min resolution to hours.
     # data['Step'] *= time_step
@@ -65,8 +65,6 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.show()
     # If multiple runs are made, the mean of all runs is plotted.
     else:
-        data.set_index(['iteration', 'Step'], inplace=True)
-
         # Development of the station power.
         """
         plt.figure()
@@ -74,7 +72,52 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
             plt.plot(data.xs(iter_num, level='iteration')['Power'])
         """
 
-# ----------------------------------------------------------------------------------------------------------------------
+        # Development of station power by vehicle type.
+        type_data = data.groupby([data['iteration'], data['Time'].dt.time, data['Type']])['power'].sum()
+        type_data_mean = type_data.groupby(['Time', 'Type']).mean()
+
+        # type_data.xs((0, 'ExternalFastCharge'), level=['iteration', 'Type']).plot()
+
+        # plt.figure()
+        # type_data.xs((0, 'Battery'), level=['iteration', 'Type']).plot()
+
+        type_mean = pd.DataFrame()
+        type_mean['ExternalFastCharge'] = type_data_mean.xs('ExternalFastCharge', level='Type')
+        type_mean['ExternalBreak'] = type_data_mean.xs('ExternalBreak', level='Type')
+        type_mean['ExternalNight'] = type_data_mean.xs('ExternalNight', level='Type')
+        type_mean['Internal'] = type_data_mean.xs('Internal', level='Type')
+
+        plt.figure()
+        type_mean.plot.area(alpha=.8)
+        plt.savefig(f'{path}/load_type_plot.pdf')
+        plt.show()
+
+        # ----------------------------------------------------------------------------------------------------------------------
+
+        def plot_max(df, ax, col_name):
+            """
+            Plots maximum value of time series.
+            """
+            x_max = df[col_name].idxmax()
+            y_max = df[col_name].max()
+            if ax is not None:
+                ax.plot(x_max, y_max, marker='o', color='#3F5D7D')
+                ax.annotate(str(round(y_max, 0)) + 'kW',  # this is the text
+                            (x_max, y_max),  # these are the coordinates to position the label
+                            textcoords="offset points",  # how to position the text
+                            xytext=(25, 6),  # distance from text to points (x,y)
+                            ha='center',
+                            color='#3F5D7D')
+            else:
+                plt.plot(x_max, y_max, marker='o', color='#3F5D7D')
+                plt.annotate(str(round(y_max, 0)) + 'kW',  # this is the text
+                             (x_max, y_max),  # these are the coordinates to position the label
+                             textcoords="offset points",  # how to position the text
+                             xytext=(25, 6),  # distance from text to points (x,y)
+                             ha='center',
+                             color='#3F5D7D')
+
+        data.set_index(['iteration', 'Step'], inplace=True)
 
         # Mean power and standard deviation for all runs.
         mean_data = pd.DataFrame()
@@ -82,6 +125,7 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         mean_data['std'] = data.groupby(data['Time'].dt.time)['Power'].std()
         mean_data['max'] = mean_data['mean'].max()
 
+        """
         plt.figure()
         mean_data['mean'].plot()
         mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
@@ -89,28 +133,45 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.xlabel('Time')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
+        
+        plt.savefig(f'{path}/load_plot.pdf')
+            plt.show()
+        """
 
-        # plt.savefig(f'{path}/load_plot.pdf')
-        plt.show()
+        # ----------------------------------------------------------------------------------------------------------------------
+        if flexibility:
+            fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1]})
+            fig.set_figheight(6)
+            mean_data['mean'].plot(ax=ax1)
+            plot_max(mean_data, ax1, 'mean')
+            type_data_mean.xs('Battery', level='Type').plot.area(ax=ax2, color='#07bd9c', alpha=.6, stacked=False)
+            ax2.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
+            ax1.set(ylabel='Power [kWh]')
+            ax2.set(ylabel='Power [kWh]')
+            fig.suptitle('Station load with flexibility')
 
-# ----------------------------------------------------------------------------------------------------------------------
+            plt.savefig(f'{path}/load_flex_plot.pdf')
+            plt.show()
+
+        # ----------------------------------------------------------------------------------------------------------------------
 
         plt.figure()
+        mean_data['mean'].plot()
+        plot_max(mean_data, None, 'mean')
         over_line = (mean_data['mean'] - mean_data['std'])
         under_line = (mean_data['mean'] + mean_data['std'])
-        mean_data['mean'].plot()
         plt.fill_between(mean_data.index, under_line,
                          over_line, alpha=.3)
         # ax.xaxis.set_major_locator(HourLocator())
-        mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
+        # mean_data['max'].plot(linestyle='dotted', linewidth=1.5)
         plt.xlabel('Time')
         plt.ylabel('Power [kW]')
         plt.title('Station load')
 
-        # plt.savefig(f'{path}/mean_load_plot.pdf')
+        plt.savefig(f'{path}/mean_load_plot.pdf')
         plt.show()
 
-# ----------------------------------------------------------------------------------------------------------------------
+        # ----------------------------------------------------------------------------------------------------------------------
 
         # Boxplot for mean power over all runs.
         """
@@ -119,8 +180,8 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
         plt.show()
         """
 
-# ----------------------------------------------------------------------------------------------------------------------
-
+        # ----------------------------------------------------------------------------------------------------------------------
+        """
         # Duration plot for mean power over all runs.
         dur_data = mean_data
         dur_data['interval'] = time_step  # time per step in hours.
@@ -138,13 +199,13 @@ def station_plot(results, multirun=False, iterations=0, time_step=10/60, sim_dur
 
         # plt.savefig(f'{path}/duration_plot.pdf')
         plt.show()
+        """
 
-    return data
+    return type_data_mean
 
 
 def vehicle_plot(results):
     data = pd.DataFrame(results)
-    # data['Step'] *= (10/60)
     data.set_index(['iteration', 'Step'], inplace=True)
 
     # Start soc for all vehicles.
@@ -176,6 +237,7 @@ def vehicle_plot(results):
     """
 
     # Chosen arrival times for each vehicle.
+    """
     # xs() returns a specific section of the dataframe based on index level and row values.
     start_arrival = data.xs((0, 0), level=['iteration', 'Step'])['Arrival']
     plt.figure()
@@ -184,9 +246,10 @@ def vehicle_plot(results):
     plt.ylabel('Number of vehicles')
     plt.title('Arrival times')
     plt.show()
-
     """
+
     # Battery capacity for all vehicles.
+    """
     capacity = data.xs((0, 0), level=['iteration', 'Step'])['Capacity']
     plt.figure()
     capacity.groupby(capacity).count().plot(kind='bar')
@@ -196,14 +259,25 @@ def vehicle_plot(results):
     plt.show()
     """
 
-    """
     # Max charging power for all vehicles.
+    """
     charge = data.xs((0, 0), level=['iteration', 'Step'])['MaxCharge']
     plt.figure()
     charge.groupby(charge).count().plot(kind='bar')
     plt.xlabel('Power [kW]')
     plt.ylabel('Number of vehicles')
     plt.title('Max charging power')
+    plt.show()
+    """
+
+    # Distribution of vehicle types.
+    """
+    types = data.xs((0, 0), level=['iteration', 'Step'])['Type']
+    plt.figure()
+    types.groupby(types).count().plot(kind='bar')
+    plt.xlabel('Type')
+    plt.ylabel('Number of vehicles')
+    plt.title('Vehicle types')
     plt.show()
     """
 
