@@ -13,7 +13,7 @@ class Battery(Agent):
     Class for a local battery pack.
     """
 
-    def __init__(self, unique_id, station, capacity, soc, station_limit):
+    def __init__(self, unique_id, station, capacity, max_charge, soc, station_limit):
         super().__init__(unique_id, station)
         """
         Parameters
@@ -30,8 +30,12 @@ class Battery(Agent):
         self.station = station
         # Time per iteration step in minutes.
         self.resolution = station.resolution
+        # Label to sort agents by under visualization.
+        self.type = 'Battery'
         # Capacity of the battery in kWh.
         self.capacity = capacity
+        # The maximum charging power of the battery.
+        self.max_charge = max_charge
         # State of Charge of the vehicle battery in percentage.
         self.soc = soc
         # Upper limit for the soc of the battery.
@@ -41,7 +45,7 @@ class Battery(Agent):
         # The upper power limit at the station for when the battery starts discharging.
         self.limit = station_limit
         # The lower power limit at the station for when the battery starts recharging.
-        self.charge_limit = station_limit / 3
+        self.charge_limit = station_limit - 100
         # How much power the battery is currently using to recharge/discharge.
         self.power = 0
         # If the battery is drained or full.
@@ -49,7 +53,6 @@ class Battery(Agent):
         self.full = True
 
         self.arrival = None
-        self.max_charge = None
 
     def recharge(self):
         """
@@ -60,7 +63,7 @@ class Battery(Agent):
         new_soc = self.soc + (step_capacity / self.capacity)*100
         if new_soc > self.upper_soc_limit:
             # Adjust the power to the amount we need to get exactly to the upper soc limit.
-            self.power = -(self.lower_soc_limit - self.soc) * 0.6 * (self.capacity / self.resolution)
+            self.power = (self.upper_soc_limit - self.soc) * 0.6 * (self.capacity / self.resolution)
             self.soc = self.upper_soc_limit
             self.full = True
         else:
@@ -95,15 +98,21 @@ class Battery(Agent):
         """
         Battery actions to execute for the second stage of each iteration of a simulation.
         """
-        station_power = self.station.get_station_power()
+        station_power = self.station.get_station_power(battery=False)
         if station_power > self.limit and not self.empty:
-            self.power = station_power - self.limit
+            if (station_power - self.limit) > self.max_charge:
+                self.power = self.max_charge
+            else:
+                self.power = station_power - self.limit
             self.discharge()
             self.station.batt_power = self.power
-        elif station_power < self.limit and not self.full:
-            self.power = -(self.limit - station_power)
+        elif station_power < self.charge_limit and not self.full:
+            if (self.charge_limit - station_power) > self.max_charge:
+                self.power = self.max_charge
+            else:
+                self.power = self.charge_limit - station_power
             self.recharge()
-            self.station.batt_power = self.power
+            self.station.batt_power = -self.power
         else:
             self.station.batt_power = 0
 
