@@ -38,8 +38,8 @@ class Station(Model):
                                                   1, 1, 1, 1, 1, 1, 1, 1,
                                                   2, 4, 7, 7, 4, 2, 1, 1]}}
 
-    def __init__(self, num_fastcharge, num_break, num_night, num_internal, num_battery, num_charger,
-                 station_limit, time_resolution, sim_time):
+    def __init__(self, num_fastcharge, num_break, num_night, num_internal, num_charger,
+                 battery, station_limit, time_resolution, sim_time):
         """
         Parameters
         ----------
@@ -47,8 +47,8 @@ class Station(Model):
         num_break : int
         num_night : int
         num_internal : int
-        num_battery: int
         num_charger: int
+        battery: bool
         station_limit: int
         time_resolution: int
         sim_time: int
@@ -56,7 +56,6 @@ class Station(Model):
         super().__init__()
 
         # Station-------------------------------------------------------------------------------------------------------
-        self.batt_power = 0
 
         num_vehicles = {ExternalFastCharge: num_fastcharge, ExternalBreak: num_break, ExternalNight: num_night,
                         Internal: num_internal}
@@ -73,12 +72,12 @@ class Station(Model):
         self.sim_time = sim_time
         # Time that passes for each step in minutes.
         self.resolution = time_resolution
+        # The timestamp for the current step in a simulation.
+        self.step_time = None
         # List of timestamps for each simulation step.
         self.timestamps = pd.Series(pd.date_range('20230101 00:00:00',
                                                   periods=self.sim_time * (60 / self.resolution),
                                                   freq=f'{self.resolution}T'))
-        # The timestamp for the current step in a simulation.
-        self.step_time = None
 
         # Agents--------------------------------------------------------------------------------------------------------
 
@@ -91,8 +90,11 @@ class Station(Model):
                 self.schedule.add(obj)
             counter += vehicle_num
 
-        for num in range(num_battery):
-            obj = Battery(unique_id=counter + num, station=self, capacity=150, soc=100, limit=station_limit)
+        if battery:
+            #
+            self.batt_power = 0
+            obj = Battery(unique_id=counter + num, station=self, capacity=450, max_charge=350, soc=100,
+                          station_limit=station_limit)
             self.schedule.add(obj)
 
         # List to contain all chargers at the station.
@@ -100,11 +102,12 @@ class Station(Model):
 
         # Data collector for model and agent variables.
         self.datacollector = DataCollector(
-            model_reporters={'Power': self.get_station_power, 'Time': 'step_time'},
-            agent_reporters={'Soc': 'soc', 'Arrival': 'arrival', 'Capacity': 'capacity', 'MaxCharge': 'max_charge'}
+            model_reporters={'Power': [self.get_station_power, [battery]], 'Time': 'step_time'},
+            agent_reporters={'Soc': 'soc', 'Arrival': 'arrival', 'Capacity': 'capacity', 'Type': 'type',
+                             'power': 'power'}
         )
 
-    def get_station_power(self):
+    def get_station_power(self, battery):
         """
         Finds the power used for all chargers to return the total power used at the station.
 
@@ -113,7 +116,10 @@ class Station(Model):
 
         """
         power_sum = [charger.max_power - charger.accessible_power for charger in self.charge_list]
-        return sum(power_sum)
+        if battery:
+            return sum(power_sum) - self.batt_power
+        else:
+            return sum(power_sum)
 
     def step(self):
         """
