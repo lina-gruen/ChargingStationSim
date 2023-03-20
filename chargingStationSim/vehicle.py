@@ -67,7 +67,7 @@ class Vehicle(Agent):
         self.resolution = station.resolution
         # Set the battery capacity and maximum charging power for the vehicle.
         self.capacity, self.max_charge = self.set_params(params)
-        # State of Charge of the vehicle battery.
+        # State of Charge of the vehicle battery in percentage.
         self.soc = self.get_start_soc()
         # Arrival time at charging station.
         self.arrival = self.get_arrival()
@@ -235,6 +235,7 @@ class Vehicle(Agent):
             self.state['charging'] = False
             self.charger.remove_vehicle(self.power)
             self.charger = None
+            self.power = 0
 
     def step_2(self):
         """
@@ -255,6 +256,7 @@ class ExternalFastCharge(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
+        self.type = 'ExternalFastCharge'
         self.target_power = self.max_charge
         self.target_soc = 80
         self.charge_steps = self.get_charge_steps(mean=25, std=2)
@@ -270,6 +272,7 @@ class ExternalBreak(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
+        self.type = 'ExternalBreak'
         self.target_power = self.max_charge
         self.target_soc = 80
         self.charge_steps = self.get_charge_steps(mean=45, std=2)
@@ -285,6 +288,7 @@ class ExternalNight(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
+        self.type = 'ExternalNight'
         self.target_power = 60
         self.target_soc = 100
         self.charge_steps = self.get_charge_steps(mean=600, std=2)
@@ -300,6 +304,7 @@ class Internal(Vehicle):
     def __init__(self, unique_id, station, params):
         super().__init__(unique_id, station, params)
 
+        self.type = 'Internal'
         self.target_power = 50
         self.target_soc = 100
         self.charge_steps = self.get_charge_steps(mean=350, std=2)
