@@ -38,6 +38,8 @@ class Station(Model):
                                                   1, 1, 1, 1, 1, 1, 1, 1,
                                                   2, 4, 7, 7, 4, 2, 1, 1]}}
 
+    battery_params = {'capacity': 1000, 'max_charge': 1000, 'soc': 100}
+
     def __init__(self, num_fastcharge, num_break, num_night, num_internal, num_charger,
                  battery, station_limit, time_resolution, sim_time):
         """
@@ -86,14 +88,20 @@ class Station(Model):
             # Set the probability distribution for arrival times for the current vehicle type.
             vehicle_type.set_arrival_dist(self.vehicle_params[vehicle_type]['arrival_dist'], self.resolution)
             for num in range(vehicle_num):
-                obj = vehicle_type(unique_id=counter + num, station=self, params=self.vehicle_params[vehicle_type])
+                obj = vehicle_type(unique_id=counter + num,
+                                   station=self,
+                                   params=self.vehicle_params[vehicle_type])
                 self.schedule.add(obj)
             counter += vehicle_num
 
         if battery:
             #
             self.batt_power = 0
-            obj = Battery(unique_id=counter + num, station=self, capacity=450, max_charge=350, soc=100,
+            obj = Battery(unique_id=counter + 1,
+                          station=self,
+                          capacity=self.battery_params['capacity'],
+                          max_charge=self.battery_params['max_charge'],
+                          soc=self.battery_params['soc'],
                           station_limit=station_limit)
             self.schedule.add(obj)
 
@@ -102,7 +110,8 @@ class Station(Model):
 
         # Data collector for model and agent variables.
         self.datacollector = DataCollector(
-            model_reporters={'Power': [self.get_station_power, [battery]], 'Time': 'step_time'},
+            model_reporters={'Power': [self.get_station_power, [battery]], 'Time': 'step_time',
+                             'Batt_power': 'batt_power'},
             agent_reporters={'Soc': 'soc', 'Arrival': 'arrival', 'Capacity': 'capacity', 'Type': 'type',
                              'power': 'power'}
         )
