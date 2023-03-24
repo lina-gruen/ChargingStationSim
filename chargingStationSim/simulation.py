@@ -43,10 +43,16 @@ save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Mas
 
 # Set custom matplotlib style.
 set_plotstyle()
-# Run functions for visualization of the simulation results.
-station_data = station_plot(results, multirun=True, flexibility=True, iterations=num_runs, time_step=time_resolution / 60,
-                            sim_duration=sim_time, path=save_path)
-vehicle_data = vehicle_plot(results)
+
+if model_params['battery']:
+    # Run functions for visualization of the simulation results.
+    station_data = station_plot(results, multirun=True, flexibility=True, iterations=num_runs,
+                                path=save_path, run_nr=1)
+else:
+    station_data = station_plot(results, multirun=True, flexibility=False, iterations=num_runs,
+                                path=save_path, run_nr=1)
+
+# vehicle_data = vehicle_plot(results)
 
 # record end time
 end = time.time()
