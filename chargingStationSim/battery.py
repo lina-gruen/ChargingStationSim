@@ -42,15 +42,19 @@ class Battery(Agent):
         self.upper_soc_limit = 80
         # Lower limit for the soc of the battery.
         self.lower_soc_limit = 10
-        # The upper power limit at the station for when the battery starts discharging.
-        self.limit = station_limit
-        # The lower power limit at the station for when the battery starts recharging.
-        self.charge_limit = station_limit - 100
         # How much power the battery is currently using to recharge/discharge.
         self.power = 0
-        # If the battery is drained or full.
-        self.empty = False
-        self.full = True
+        # Check if the battery is drained or fully charged at initialization.
+        if self.soc <= self.lower_soc_limit:
+            self.empty = True
+        else:
+            self.empty = False
+        if self.soc >= self.upper_soc_limit:
+            self.full = True
+        else:
+            self.full = False
+        # The upper power limit at the station for when the battery starts discharging.
+        self.limit = station_limit - 100
 
         self.arrival = None
 
@@ -66,10 +70,14 @@ class Battery(Agent):
             self.power = (self.upper_soc_limit - self.soc) * 0.6 * (self.capacity / self.resolution)
             self.soc = self.upper_soc_limit
             self.full = True
+        elif new_soc == self.upper_soc_limit:
+            self.soc = self.upper_soc_limit
+            self.full = True
         else:
             self.soc = round(new_soc, 2)
-            if self.empty:
-                self.empty = False
+        self.power = -self.power
+        if self.empty:
+            self.empty = False
 
     def discharge(self):
         """
@@ -83,10 +91,13 @@ class Battery(Agent):
             self.power = (self.soc - self.lower_soc_limit) * 0.6 * (self.capacity / self.resolution)
             self.soc = self.lower_soc_limit
             self.empty = True
+        elif new_soc == self.lower_soc_limit:
+            self.soc = self.lower_soc_limit
+            self.empty = True
         else:
             self.soc = round(new_soc, 2)
-            if self.full:
-                self.full = False
+        if self.full:
+            self.full = False
 
     def step_1(self):
         """
@@ -100,21 +111,35 @@ class Battery(Agent):
         """
         station_power = self.station.get_station_power(battery=False)
         if station_power > self.limit and not self.empty:
-            if (station_power - self.limit) > self.max_charge:
+            if (station_power - self.limit) >= self.max_charge:
                 self.power = self.max_charge
             else:
                 self.power = station_power - self.limit
             self.discharge()
             self.station.batt_power = self.power
-        elif station_power < self.charge_limit and not self.full:
-            if (self.charge_limit - station_power) > self.max_charge:
-                self.power = self.max_charge
+        # elif station_power < self.charge_limit and not self.full:
+        #     if (self.charge_limit - station_power) >= self.max_charge:
+        #         self.power = self.max_charge
+        #     else:
+        #         self.power = self.charge_limit - station_power
+        #     self.recharge()
+        #     self.station.batt_power = self.power
+        # else:
+        #     self.power = 0
+        #     self.station.batt_power = self.power
+        elif station_power < self.limit and not self.full:
+            if self.limit / 2 < station_power:
+                if (self.limit - station_power) >= self.max_charge:
+                    self.power = self.max_charge
+                else:
+                    self.power = self.limit - station_power
             else:
-                self.power = self.charge_limit - station_power
+                if (self.limit / 2 - station_power) >= self.max_charge:
+                    self.power = self.max_charge
+                else:
+                    self.power = self.limit / 2 - station_power
             self.recharge()
-            self.station.batt_power = -self.power
+            self.station.batt_power = self.power
         else:
-            self.station.batt_power = 0
-
-
-
+            self.power = 0
+            self.station.batt_power = self.power
