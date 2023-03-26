@@ -218,10 +218,9 @@ class Vehicle(Agent):
             pass
         elif self.state['charging']:
             pass
-        # elif self.state['driving']:
-        #     self.drive()
         elif self.state['waiting']:
             self.find_charger()
+            # elif self.arrival == self.station.step_time.time():
         elif self.arrival == self.station.step_time:
             self.find_charger()
         else:
