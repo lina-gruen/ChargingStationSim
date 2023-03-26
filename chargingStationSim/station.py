@@ -38,7 +38,7 @@ class Station(Model):
                                                   1, 1, 1, 1, 1, 1, 1, 1,
                                                   2, 4, 7, 7, 4, 2, 1, 1]}}
 
-    battery_params = {'capacity': 1000, 'max_charge': 1000, 'soc': 100}
+    battery_params = {'capacity': 1000, 'max_charge': 1000, 'soc': 10}
 
     def __init__(self, num_fastcharge, num_break, num_night, num_internal, num_charger,
                  battery, station_limit, time_resolution, sim_time):
@@ -80,6 +80,9 @@ class Station(Model):
         self.timestamps = pd.Series(pd.date_range('20230101 00:00:00',
                                                   periods=self.sim_time * (60 / self.resolution),
                                                   freq=f'{self.resolution}T'))
+        # self.day = pd.Series(pd.date_range('20230101 00:00:00',
+        #                                    periods=24 * (60 / self.resolution),
+        #                                    freq=f'{self.resolution}T')).dt.time
 
         # Agents--------------------------------------------------------------------------------------------------------
 
@@ -126,7 +129,7 @@ class Station(Model):
         """
         power_sum = [charger.max_power - charger.accessible_power for charger in self.charge_list]
         if battery:
-            return sum(power_sum) - self.batt_power
+            return sum(power_sum) + self.batt_power
         else:
             return sum(power_sum)
 
