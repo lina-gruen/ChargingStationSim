@@ -66,11 +66,12 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
     # If multiple runs are made, the mean of all runs is plotted.
     else:
         # Development of the station power.
-        """
+        multi_run = data.groupby(['iteration', data['Time'].dt.time])['Power'].mean()
+
         plt.figure()
         for iter_num in range(iterations):
-            plt.plot(data.xs(iter_num, level='iteration')['Power'])
-        """
+            multi_run.xs(iter_num, level='iteration').plot()
+        plt.show()
 
         # Development of station power by vehicle type.
         type_data = data.groupby([data['iteration'], data['Time'].dt.time, data['Type']])['power'].sum()
@@ -123,12 +124,19 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
                              ha='center',
                              color='#3F5D7D')
 
-        data.set_index(['iteration', 'Step'], inplace=True)
+        """
+        # Mean power and standard deviation for all runs.
+        mean_data_2 = pd.DataFrame()
+        mean_data_2['mean'] = data.groupby(data['Time'].dt.time)['Power'].mean()
+        mean_data_2['std'] = data.groupby(data['Time'].dt.time)['Power'].std()
+        mean_data_2['max'] = mean_data_2['mean'].max()
+        """
 
         # Mean power and standard deviation for all runs.
         mean_data = pd.DataFrame()
-        mean_data['mean'] = data.groupby(data['Time'].dt.time)['Power'].mean()
-        mean_data['std'] = data.groupby(data['Time'].dt.time)['Power'].std()
+        sum_data = data.groupby(['iteration', data['Time'].dt.time])['power'].sum()
+        mean_data['mean'] = sum_data.groupby('Time').mean()
+        mean_data['std'] = sum_data.groupby('Time').std()
         mean_data['max'] = mean_data['mean'].max()
 
         """
@@ -220,7 +228,7 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
         plt.show()
         """
 
-    return batt_soc
+    return mean_data
 
 
 def vehicle_plot(results):
