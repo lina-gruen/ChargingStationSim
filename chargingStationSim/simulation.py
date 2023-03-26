@@ -26,7 +26,7 @@ num_runs = 10
 
 # Set model parameters for a simulation.
 model_params = {'num_fastcharge': 15, 'num_break': 25, 'num_night': 25, 'num_internal': 67, 'num_charger': 20,
-                'battery': True, 'station_limit': 1800, 'time_resolution': time_resolution, 'sim_time': sim_time}
+                'battery': True, 'station_limit': 2000, 'time_resolution': time_resolution, 'sim_time': sim_time}
 
 # Start a simulation.
 results = batch_run(
