@@ -75,7 +75,6 @@ class Battery(Agent):
             self.full = True
         else:
             self.soc = round(new_soc, 2)
-        self.power = -self.power
         if self.empty:
             self.empty = False
 
@@ -96,6 +95,7 @@ class Battery(Agent):
             self.empty = True
         else:
             self.soc = round(new_soc, 2)
+        self.power = -self.power
         if self.full:
             self.full = False
 
