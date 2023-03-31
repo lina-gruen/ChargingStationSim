@@ -18,8 +18,10 @@ class Vehicle(Agent):
     Base class for all vehicles in a vehicle fleet.
     """
 
-    # Default uniform distribution for the arrival times of vehicles in a day.
+    # Default uniform distributions for the arrival and rest times of vehicles.
     arrival_dist = [1] * (60*24)
+    short_rest = [1] * (60 * 24)
+    long_rest = [1] * (60 * 24)
 
     @classmethod
     def set_arrival_dist(cls, dist, resolution):
@@ -28,10 +30,10 @@ class Vehicle(Agent):
 
         Parameters
         ----------
-        resolution: int
-            time resolution of each step in the simulation in minutes.
         dist: list
             weights for the arrival probability for each hour.
+        resolution: int
+            time resolution of each step in the simulation in minutes.
         """
         if not len(dist) == 24:
             raise KeyError('Invalid length given for arrival distribution.')
@@ -42,6 +44,24 @@ class Vehicle(Agent):
                     extended_dist.append(weight)
             extended_dist = extended_dist / np.sum(extended_dist)
             cls.arrival_dist = extended_dist
+
+    @classmethod
+    def set_rest_dist(cls, short_rest, long_rest):
+        """
+        Sets new probability distribution for the arrival in each subclass.
+
+        Parameters
+        ----------
+        short_rest: list
+            weights for the probability of taking a short break for each hour.
+        long_rest: list
+            weights for the probability of taking a long break for each hour.
+        """
+        if not len(short_rest) == 24 or not len(short_rest) == 24:
+            raise KeyError('Invalid length given for one of the rest distributions.')
+        else:
+            cls.short_rest_dist = short_rest
+            cls.long_rest_dist = long_rest
 
     def __init__(self, unique_id, station, params):
         """
@@ -73,6 +93,8 @@ class Vehicle(Agent):
         self.arrival = self.get_arrival()
         # Maximum steps that the vehicle charges.
         self.charge_steps = self.get_charge_steps(mean=45, std=2)
+        #
+        self.wait_time = 0
         # Wished charging power when searching for a charger.
         self.target_power = None
         # Wished end soc when charging.
@@ -199,8 +221,13 @@ class Vehicle(Agent):
         # All charger that are available and the power they can deliver.
         available = [(charger, charger.accessible_power) for charger in self.station.charge_list if charger.available]
         if not available:
-            self.state['waiting'] = True
-            return
+            if not self.state['waiting']:
+                self.state['waiting'] = True
+                self.wait_time += self.resolution
+                return
+            else:
+                self.wait_time += self.resolution
+                return
         # Find the charger for which the accessible power is closest to the target power of the vehicle.
         charger = available[min(range(len(available)), key=lambda num: abs(available[num][1] - self.target_power))]
         # If what's available is less or equal to the requested power we take all the available power:
