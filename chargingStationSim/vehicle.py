@@ -272,9 +272,14 @@ class ExternalBreak(Vehicle):
         super().__init__(unique_id, station, params)
 
         self.type = 'ExternalBreak'
-        self.target_power = self.max_charge
         self.target_soc = 80
-        self.charge_steps = self.get_charge_steps(mean=45, std=2)
+        # self.target_power = self.max_charge
+        target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
+        if target_power >= self.max_charge:
+            self.target_power = self.max_charge
+        else:
+            self.target_power = target_power
+        self.charge_steps = self.get_charge_steps(mean=30, std=2)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
