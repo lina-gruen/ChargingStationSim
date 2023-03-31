@@ -91,7 +91,8 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
 
             plt.figure()
             type_mean.plot.area(alpha=.8)
-            plt.ylabel('Power [kW]')
+            plt.xlabel('Tid')
+            plt.ylabel('Effekt [kW]')
             plt.savefig(f'{path}/load_type_plot_{run_nr}.pdf')
             plt.show()
 
@@ -161,8 +162,8 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
         under_line = (mean_data['mean'] + mean_data['std'])
         plt.fill_between(mean_data.index, under_line,
                          over_line, alpha=.3)
-        plt.xlabel('Time')
-        plt.ylabel('Power [kW]')
+        plt.xlabel('Tid')
+        plt.ylabel('Effekt [kW]')
 
         if flexibility:
             # plt.savefig(f'{path}/mean_load_plot_{run_nr}.pdf')
@@ -193,6 +194,7 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
             ax1.set(ylabel='Effekt [kW]')
             ax2.set(ylabel='Effekt [kW]')
             ax3.set(ylabel='Soc [%]')
+            ax3.set(xlabel='Tid')
             ax2.title.set_text('Stasjonært batteri')
 
             # plt.savefig(f'{path}/flex_load_plot_{run_nr}.pdf')
@@ -228,10 +230,10 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
         plt.show()
         """
 
-    return mean_data
+    return data
 
 
-def vehicle_plot(results):
+def vehicle_plot(results, steps, run_nr):
     data = pd.DataFrame(results)
     data.set_index(['iteration', 'Step'], inplace=True)
 
@@ -308,4 +310,23 @@ def vehicle_plot(results):
     plt.show()
     """
 
-    return data
+    # Distribution of waiting times.
+    """
+    wait = data.xs((0, 143), level=['iteration', 'Step'])['Waiting']
+    plt.figure()
+    wait.groupby(wait).count().plot(kind='bar')
+    plt.xlabel('Time [min]')
+    plt.ylabel('Number of vehicles')
+    plt.title('Waiting times')
+    plt.show()
+    """
+
+    wait_mean = data.groupby(['iteration', 'Step'])['Waiting'].mean()
+    wait_mean = wait_mean.xs(steps, level='Step')
+    plt.figure()
+    wait_mean.plot.box(label='Case 1')
+    # plt.xlabel()
+    plt.ylabel('Tid [min]')
+    plt.show()
+
+    return wait_mean
