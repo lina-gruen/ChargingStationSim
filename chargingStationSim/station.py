@@ -7,7 +7,7 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from chargingStationSim.battery import Battery
 from chargingStationSim.charger import Charger
-from chargingStationSim.vehicle import ExternalFastCharge, ExternalBreak, ExternalNight, Internal
+from chargingStationSim.vehicle import Vehicle, ExternalFastCharge, ExternalBreak, ExternalNight, Internal
 from mesa import Model
 # from mesa.time import BaseScheduler
 from mesa.time import StagedActivation
@@ -20,25 +20,20 @@ class Station(Model):
     Class for a charging station.
     """
 
-    # Parameters for each vehicle group containing mean values to use in a probability distribution.
-    vehicle_params = {ExternalFastCharge: {'capacity': (100, 150, 200), 'max_charge': (150, 200, 250),
-                                           'arrival_dist': [1, 1, 1, 1, 1, 1, 1, 1,
-                                                            1, 2, 2, 4, 7, 7, 4, 2,
-                                                            2, 1, 1, 1, 1, 1, 1, 1]},
-                      ExternalBreak: {'capacity': (250, 300, 350), 'max_charge': (200, 250, 350),
-                                      'arrival_dist': [1, 1, 1, 1, 1, 1, 1, 1,
-                                                       1, 2, 2, 4, 7, 7, 4, 2,
-                                                       2, 1, 1, 1, 1, 1, 1, 1]},
-                      ExternalNight: {'capacity': (250, 300, 350), 'max_charge': (350, 400, 450),
-                                      'arrival_dist': [1, 1, 1, 1, 1, 1, 1, 1,
-                                                       1, 1, 1, 4, 7, 7, 2, 4,
-                                                       7, 7, 2, 2, 1, 1, 1, 1]},
-                      Internal: {'capacity': (200, 250, 300), 'max_charge': (200, 250, 350),
-                                 'arrival_dist': [1, 1, 1, 1, 1, 1, 1, 1,
-                                                  1, 1, 1, 1, 1, 1, 1, 1,
-                                                  2, 4, 7, 7, 4, 2, 1, 1]}}
+    # Parameters for each vehicle group containing arrays to randomly select params from.
+    vehicle_params = {ExternalFastCharge: {'capacity': (500, 600, 700, 800, 900), 'max_charge': (350, 450, 500)},
+                      ExternalBreak: {'capacity': (500, 600, 700, 800, 900), 'max_charge': (350, 450, 500)},
+                      ExternalNight: {'capacity': (500, 600, 700, 800, 900), 'max_charge': (350, 450, 500)},
+                      Internal: {'capacity': (500, 600, 700, 800, 900), 'max_charge': (350, 450, 500)}}
 
-    battery_params = {'capacity': 1000, 'max_charge': 1000, 'soc': 10}
+    arrival_dist = [1.0, 1.0, 1.0, 1.1, 1.2, 1.9, 3.1, 3.6, 4.5, 5.0, 5.0, 5.0,
+                    4.9, 4.8, 4.6, 4.0, 3.4, 3.0, 2.6, 2.2, 1.9, 1.7, 1.3, 1.1]
+
+    short_rest_dist = [3, 1, 1, 4, 35, 49, 36, 26, 30, 54, 46, 37, 33, 27, 24, 18, 16, 14, 13, 9, 7, 4, 2, 5]
+
+    long_rest_dist = [3, 3, 3, 2, 2, 6, 5, 11, 6, 6, 9, 10, 14, 18, 20, 41, 59, 47, 36, 29, 19, 11, 9, 13]
+
+    battery_params = {'capacity': 1000, 'max_charge': 1000, 'soc': 90}
 
     def __init__(self, num_fastcharge, num_break, num_night, num_internal, num_charger,
                  battery, station_limit, time_resolution, sim_time):
@@ -89,7 +84,7 @@ class Station(Model):
         counter = 0
         for vehicle_type, vehicle_num in num_vehicles.items():
             # Set the probability distribution for arrival times for the current vehicle type.
-            vehicle_type.set_arrival_dist(self.vehicle_params[vehicle_type]['arrival_dist'], self.resolution)
+            Vehicle.set_arrival_dist(self.arrival_dist, self.resolution)
             for num in range(vehicle_num):
                 obj = vehicle_type(unique_id=counter + num,
                                    station=self,
