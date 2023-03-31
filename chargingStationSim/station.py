@@ -85,6 +85,7 @@ class Station(Model):
         for vehicle_type, vehicle_num in num_vehicles.items():
             # Set the probability distribution for arrival times for the current vehicle type.
             Vehicle.set_arrival_dist(self.arrival_dist, self.resolution)
+            Vehicle.set_rest_dist(self.short_rest_dist, self.long_rest_dist)
             for num in range(vehicle_num):
                 obj = vehicle_type(unique_id=counter + num,
                                    station=self,
@@ -111,7 +112,7 @@ class Station(Model):
             model_reporters={'Power': [self.get_station_power, [battery]], 'Time': 'step_time',
                              'Batt_power': 'batt_power'},
             agent_reporters={'Soc': 'soc', 'Arrival': 'arrival', 'Capacity': 'capacity', 'Type': 'type',
-                             'power': 'power'}
+                             'power': 'power',  'Waiting': 'wait_time'}
         )
 
     def get_station_power(self, battery):
