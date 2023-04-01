@@ -7,6 +7,7 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
 import numpy as np
+import pandas as pd
 from numpy.random import default_rng
 
 # Seed for randomization.
@@ -20,8 +21,7 @@ class Vehicle(Agent):
 
     # Default uniform distributions for the arrival and rest times of vehicles.
     arrival_dist = [1] * (60*24)
-    short_rest = [1] * (60 * 24)
-    long_rest = [1] * (60 * 24)
+    rest_dist = [(1, 1) for _ in range((60 * 24))]
 
     @classmethod
     def set_arrival_dist(cls, dist, resolution):
@@ -60,8 +60,10 @@ class Vehicle(Agent):
         if not len(short_rest) == 24 or not len(short_rest) == 24:
             raise KeyError('Invalid length given for one of the rest distributions.')
         else:
-            cls.short_rest_dist = short_rest
-            cls.long_rest_dist = long_rest
+            dist = []
+            for short, long in zip(short_rest, long_rest):
+                dist.append((short, long))
+            cls.rest_dist = dist
 
     def __init__(self, unique_id, station, params):
         """
@@ -91,6 +93,8 @@ class Vehicle(Agent):
         self.soc = self.get_start_soc()
         # Arrival time at charging station.
         self.arrival = self.get_arrival()
+        #
+        self.rest_type = self.get_rest_type()
         # Maximum steps that the vehicle charges.
         self.charge_steps = self.get_charge_steps(mean=45, std=2)
         #
@@ -148,6 +152,10 @@ class Vehicle(Agent):
         # Random choice from list with probability weights in p.
         arrival_step = rand_generator.choice(self.station.timestamps, p=self.arrival_dist)
         return arrival_step
+
+    def get_rest_type(self):
+        hour = pd.Timestamp(self.arrival).hour
+        return rand_generator.choice(['kort', 'lang'], p=self.rest_dist[hour])
 
     def get_charge_steps(self, mean, std):
         """
