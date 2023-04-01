@@ -6,12 +6,11 @@ The file contains the Vehicle class.
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from mesa import Agent
-import numpy as np
 import pandas as pd
 from numpy.random import default_rng
 
 # Seed for randomization.
-rand_generator = default_rng(seed=1256)
+# rand_generator = default_rng(seed=1257)
 
 
 class Vehicle(Agent):
@@ -19,53 +18,7 @@ class Vehicle(Agent):
     Base class for all vehicles in a vehicle fleet.
     """
 
-    # Default uniform distributions for the arrival and rest times of vehicles.
-    arrival_dist = [1] * (60*24)
-    rest_dist = [(1, 1) for _ in range((60 * 24))]
-
-    @classmethod
-    def set_arrival_dist(cls, dist, resolution):
-        """
-        Sets new probability distribution for the arrival in each subclass.
-
-        Parameters
-        ----------
-        dist: list
-            weights for the arrival probability for each hour.
-        resolution: int
-            time resolution of each step in the simulation in minutes.
-        """
-        if not len(dist) == 24:
-            raise KeyError('Invalid length given for arrival distribution.')
-        else:
-            extended_dist = []
-            for weight in dist:
-                for _ in range(int(60 / resolution)):
-                    extended_dist.append(weight)
-            extended_dist = extended_dist / np.sum(extended_dist)
-            cls.arrival_dist = extended_dist
-
-    @classmethod
-    def set_rest_dist(cls, short_rest, long_rest):
-        """
-        Sets new probability distribution for the arrival in each subclass.
-
-        Parameters
-        ----------
-        short_rest: list
-            weights for the probability of taking a short break for each hour.
-        long_rest: list
-            weights for the probability of taking a long break for each hour.
-        """
-        if not len(short_rest) == 24 or not len(short_rest) == 24:
-            raise KeyError('Invalid length given for one of the rest distributions.')
-        else:
-            dist = []
-            for short, long in zip(short_rest, long_rest):
-                dist.append((short, long))
-            cls.rest_dist = dist
-
-    def __init__(self, unique_id, station, params):
+    def __init__(self, unique_id, station, random, arrival, params):
         """
         Parameters
         ----------
@@ -73,10 +26,10 @@ class Vehicle(Agent):
             Id for the vehicle.
         station: mesa.model
             Instance of the station that contains the vehicle.
+        arrival: pandas timestamp
+            The arrival time of the vehicle at the station.
         params: dict
             Parameters for the vehicle.
-                weight: string
-                    Weight class category og the vehicle.
                 capacity: int
                     Max kWh rating of the vehicle battery.
                 max_charge: int
@@ -84,6 +37,7 @@ class Vehicle(Agent):
         """
         super().__init__(unique_id, station)
 
+        self.rand_generator = random
         self.station = station
         # Time per iteration step in minutes.
         self.resolution = station.resolution
@@ -92,12 +46,10 @@ class Vehicle(Agent):
         # State of Charge of the vehicle battery in percentage.
         self.soc = self.get_start_soc()
         # Arrival time at charging station.
-        self.arrival = self.get_arrival()
-        #
-        self.rest_type = self.get_rest_type()
+        self.arrival = arrival
         # Maximum steps that the vehicle charges.
         self.charge_steps = self.get_charge_steps(mean=45, std=2)
-        #
+        # Counter for the amount of minutes the vehicle has to stand in line at the station.
         self.wait_time = 0
         # Wished charging power when searching for a charger.
         self.target_power = None
@@ -110,8 +62,7 @@ class Vehicle(Agent):
         # Current state of the vehicle.
         self.state = {'charging': False, 'arrived': False, 'waiting': False}
 
-    @staticmethod
-    def get_start_soc():
+    def get_start_soc(self):
         """
         Finds a soc for the vehicle from a probability distribution.
 
@@ -120,10 +71,9 @@ class Vehicle(Agent):
         New soc for the vehicle.
         """
         # Gamma distribution with chosen parameter.
-        return rand_generator.gamma(shape=3, scale=6)
+        return self.rand_generator.gamma(shape=3, scale=6)
 
-    @staticmethod
-    def set_params(params):
+    def set_params(self, params):
         """
         Finds a battery capacity and maximum charging power for the vehicle from a probability distribution.
 
@@ -137,8 +87,8 @@ class Vehicle(Agent):
         Chosen battery capacity and maximum charging power
         """
         # Normal distribution with chosen mean and standard deviation.
-        capacity = rand_generator.choice(params['capacity'])
-        max_charge = rand_generator.choice(params['max_charge'])
+        capacity = self.rand_generator.choice(params['capacity'])
+        max_charge = self.rand_generator.choice(params['max_charge'])
         return capacity, max_charge
 
     def get_arrival(self):
@@ -150,12 +100,12 @@ class Vehicle(Agent):
         New arrival time for the vehicle.
         """
         # Random choice from list with probability weights in p.
-        arrival_step = rand_generator.choice(self.station.timestamps, p=self.arrival_dist)
+        arrival_step = self.rand_generator.choice(self.station.timestamps, p=self.arrival_dist)
         return arrival_step
 
     def get_rest_type(self):
         hour = pd.Timestamp(self.arrival).hour
-        return rand_generator.choice(['kort', 'lang'], p=self.rest_dist[hour])
+        return self.rand_generator.choice(['kort', 'lang'], p=self.rest_dist[hour])
 
     def get_charge_steps(self, mean, std):
         """
@@ -165,7 +115,7 @@ class Vehicle(Agent):
         -------
         Max steps available for charging.
         """
-        time = rand_generator.normal(loc=mean, scale=std)
+        time = self.rand_generator.normal(loc=mean, scale=std)
         steps = int(time / self.resolution)
         return steps
 
@@ -282,69 +232,50 @@ class Vehicle(Agent):
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class ExternalFastCharge(Vehicle):
+class External(Vehicle):
     """
-    Subclass for all group1 vehicles.
-    """
-
-    def __init__(self, unique_id, station, params):
-        super().__init__(unique_id, station, params)
-
-        self.type = 'ExternalFastCharge'
-        self.target_power = self.max_charge
-        self.target_soc = 80
-        self.charge_steps = self.get_charge_steps(mean=25, std=2)
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-class ExternalBreak(Vehicle):
-    """
-    Subclass for all group2 vehicles.
+    Subclass for all external vehicles.
     """
 
-    def __init__(self, unique_id, station, params):
-        super().__init__(unique_id, station, params)
+    def __init__(self, unique_id, station, random, arrival, params, break_type):
+        super().__init__(unique_id, station, random, arrival, params)
 
-        self.type = 'ExternalBreak'
-        self.target_soc = 80
-        # self.target_power = self.max_charge
+        self.type = 'External'
+        self.break_type = break_type
+
+        if self.break_type == 'ShortBreak':
+            self.target_soc = 80
+            self.charge_steps = self.get_charge_steps(mean=30, std=2)
+        else:
+            self.target_soc = 100
+            self.charge_steps = self.get_charge_steps(mean=600, std=2)
+
         target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
         if target_power >= self.max_charge:
             self.target_power = self.max_charge
         else:
             self.target_power = target_power
-        self.charge_steps = self.get_charge_steps(mean=30, std=2)
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-class ExternalNight(Vehicle):
-    """
-    Subclass for all group3 vehicles.
-    """
-
-    def __init__(self, unique_id, station, params):
-        super().__init__(unique_id, station, params)
-
-        self.type = 'ExternalNight'
-        self.target_power = 60
-        self.target_soc = 100
-        self.charge_steps = self.get_charge_steps(mean=600, std=2)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 
 class Internal(Vehicle):
     """
-    Subclass for all group4 vehicles.
+    Subclass for all internal vehicles.
     """
 
-    def __init__(self, unique_id, station, params):
-        super().__init__(unique_id, station, params)
+    def __init__(self, unique_id, station, random, arrival, params, break_type):
+        super().__init__(unique_id, station, random, arrival, params)
 
         self.type = 'Internal'
-        self.target_power = 50
-        self.target_soc = 100
-        self.charge_steps = self.get_charge_steps(mean=350, std=2)
+        self.break_type = break_type
+        if self.break_type == 'Internal':
+            self.target_power = 50
+            self.target_soc = 100
+            self.charge_steps = self.get_charge_steps(mean=350, std=2)
+        else:
+            self.target_power = 50
+            self.target_soc = 100
+            self.charge_steps = self.get_charge_steps(mean=350, std=2)
+
 
