@@ -5,7 +5,7 @@ This file contains the Battery class
 
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
-from mesa import Agent
+from chargingStationSim.mesa_mod import Agent
 
 
 class Battery(Agent):
@@ -20,7 +20,7 @@ class Battery(Agent):
         ----------
         unique_id: int
             Id for the battery.
-        station: mesa.model
+        station: mesa_mod.model
             Instance of the station that contains the battery.
         capacity: int
             Max kWh rating of the battery.
@@ -38,8 +38,10 @@ class Battery(Agent):
         self.max_charge = max_charge
         # State of Charge of the vehicle battery in percentage.
         self.soc = soc
+        #
+        self.wait_time = 0
         # Upper limit for the soc of the battery.
-        self.upper_soc_limit = 80
+        self.upper_soc_limit = 90
         # Lower limit for the soc of the battery.
         self.lower_soc_limit = 10
         # How much power the battery is currently using to recharge/discharge.
@@ -57,6 +59,7 @@ class Battery(Agent):
         self.limit = station_limit - 100
 
         self.arrival = None
+        self.break_type = None
 
     def recharge(self):
         """
