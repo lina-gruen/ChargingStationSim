@@ -8,10 +8,9 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 from chargingStationSim.battery import Battery
 from chargingStationSim.charger import Charger
 from chargingStationSim.vehicle import External, Internal
-from mesa import Model
-# from mesa.time import BaseScheduler
-from mesa.time import StagedActivation
-from mesa.datacollection import DataCollector
+from chargingStationSim.mesa_mod.model import Model
+from chargingStationSim.mesa_mod.time import StagedActivation
+from chargingStationSim.mesa_mod.datacollection import DataCollector
 import pandas as pd
 import numpy as np
 from numpy.random import default_rng
