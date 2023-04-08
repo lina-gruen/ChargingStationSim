@@ -5,9 +5,9 @@ The file contains the Vehicle class.
 
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
-from mesa import Agent
+from chargingStationSim.mesa_mod import Agent
 import pandas as pd
-from numpy.random import default_rng
+
 
 # Seed for randomization.
 # rand_generator = default_rng(seed=1257)
