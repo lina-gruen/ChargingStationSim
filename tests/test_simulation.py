@@ -7,11 +7,10 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 
 from chargingStationSim.station import Station
-from mesa.batchrunner import batch_run
+from chargingStationSim.mesa_mod import batch_run
 import pandas as pd
 import random
 import pytest
-from unittest import mock
 
 random.seed(123456)
 
