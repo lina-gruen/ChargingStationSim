@@ -47,7 +47,7 @@ def set_plotstyle():
     plt.rc('lines', linewidth=2)
 
 
-def station_plot(results, multirun=False, flexibility=True, iterations=0, path='', run_nr=1):
+def station_plot(results, multirun, flexibility, iterations, path, runs):
     data = pd.DataFrame(results)
     # Convert 10 min resolution to hours.
     # data['Step'] *= time_step
@@ -66,7 +66,7 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
     # If multiple runs are made, the mean of all runs is plotted.
     else:
         # Development of the station power.
-        multi_run = data.groupby(['iteration', data['Time'].dt.time])['Power'].mean()
+        multi_run = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Power'].mean()
 
         plt.figure()
         for iter_num in range(iterations):
@@ -74,8 +74,11 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
         plt.show()
 
         # Development of station power by vehicle type.
-        type_data = data.groupby([data['iteration'], data['Time'].dt.time, data['Type']])['power'].sum()
-        type_data_mean = type_data.groupby(['Time', 'Type']).mean()
+        type_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['Type']])['power'].sum()
+        type_data_mean = type_data.groupby(['RunId', 'Time', 'Type']).mean()
+
+        break_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['BreakType']])['power'].sum()
+        break_data_mean = break_data.groupby(['RunId', 'Time', 'BreakType']).mean()
 
         # type_data.xs((0, 'ExternalFastCharge'), level=['iteration', 'Type']).plot()
 
@@ -84,17 +87,28 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
 
         if not flexibility:
             type_mean = pd.DataFrame()
-            type_mean['ExternalFastCharge'] = type_data_mean.xs('ExternalFastCharge', level='Type')
-            type_mean['ExternalBreak'] = type_data_mean.xs('ExternalBreak', level='Type')
-            type_mean['ExternalNight'] = type_data_mean.xs('ExternalNight', level='Type')
             type_mean['Internal'] = type_data_mean.xs('Internal', level='Type')
+            type_mean['External'] = type_data_mean.xs('External', level='Type')
 
-            plt.figure()
-            type_mean.plot.area(alpha=.8)
-            plt.xlabel('Tid')
-            plt.ylabel('Effekt [kW]')
-            plt.savefig(f'{path}/load_type_plot_{run_nr}.pdf')
-            plt.show()
+            break_mean = pd.DataFrame()
+            break_mean['Internal'] = break_data_mean.xs('Internal', level='BreakType')
+            break_mean['ShortBreak'] = break_data_mean.xs('ShortBreak', level='BreakType')
+            break_mean['LongBreak'] = break_data_mean.xs('LongBreak', level='BreakType')
+
+            for run_nr in range(runs):
+                plt.figure()
+                type_mean.xs(run_nr, level='RunId').plot.area(alpha=.8)
+                plt.xlabel('Tid')
+                plt.ylabel('Effekt [kW]')
+                plt.savefig(f'{path}/load_type_plot_{run_nr}.pdf')
+                plt.show()
+
+                plt.figure()
+                break_mean.xs(run_nr, level='RunId').plot.area(alpha=.8)
+                plt.xlabel('Tid')
+                plt.ylabel('Effekt [kW]')
+                plt.savefig(f'{path}/load_rest_plot_{run_nr}.pdf')
+                plt.show()
 
         # ----------------------------------------------------------------------------------------------------------------------
 
@@ -135,10 +149,10 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
 
         # Mean power and standard deviation for all runs.
         mean_data = pd.DataFrame()
-        sum_data = data.groupby(['iteration', data['Time'].dt.time])['power'].sum()
-        mean_data['mean'] = sum_data.groupby('Time').mean()
-        mean_data['std'] = sum_data.groupby('Time').std()
-        mean_data['max'] = mean_data['mean'].max()
+        sum_data = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['power'].sum()
+        mean_data['mean'] = sum_data.groupby(['RunId', 'Time']).mean()
+        mean_data['std'] = sum_data.groupby(['RunId', 'Time']).std()
+        # mean_data['max'] = mean_data['mean'].max()
 
         """
         plt.figure()
@@ -154,86 +168,70 @@ def station_plot(results, multirun=False, flexibility=True, iterations=0, path='
         """
 
         # ----------------------------------------------------------------------------------------------------------------------
+        for run_nr in range(runs):
+            run_data = mean_data.xs(run_nr, level='RunId')
+            plt.figure()
+            run_data['mean'].plot()
+            plot_max(run_data, None, 'mean')
+            over_line = (run_data['mean'] - run_data['std'])
+            under_line = (run_data['mean'] + run_data['std'])
+            plt.fill_between(run_data.index, under_line,
+                             over_line, alpha=.3)
+            plt.xlabel('Tid')
+            plt.ylabel('Effekt [kW]')
 
-        plt.figure()
-        mean_data['mean'].plot()
-        plot_max(mean_data, None, 'mean')
-        over_line = (mean_data['mean'] - mean_data['std'])
-        under_line = (mean_data['mean'] + mean_data['std'])
-        plt.fill_between(mean_data.index, under_line,
-                         over_line, alpha=.3)
-        plt.xlabel('Tid')
-        plt.ylabel('Effekt [kW]')
-
-        if flexibility:
-            # plt.savefig(f'{path}/mean_load_plot_{run_nr}.pdf')
-            plt.show()
-        else:
-            # plt.savefig(f'{path}/mean_load_plot_{run_nr}_flex.pdf')
-            plt.show()
+            if flexibility:
+                plt.savefig(f'{path}/mean_load_plot_{run_nr}_flex.pdf')
+                plt.show()
+            else:
+                plt.savefig(f'{path}/mean_load_plot_{run_nr}.pdf')
+                plt.show()
 
         # ----------------------------------------------------------------------------------------------------------------------
 
         if flexibility:
+            for run_nr in range(runs):
+                power_data = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Power'].mean()
+                # power_data_mean = power_data.groupby(['Time']).mean()
+                batt_data = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Batt_power'].mean()
+                batt_soc = data.groupby(['RunId', 'iteration', data['Time'].dt.time, 'Type'])['Soc'].mean()
 
-            power_data = data.groupby(['iteration', data['Time'].dt.time])['Power'].mean()
-            # power_data_mean = power_data.groupby(['Time']).mean()
-            batt_data = data.groupby(['iteration', data['Time'].dt.time])['Batt_power'].mean()
-            batt_soc = data.groupby(['iteration', data['Time'].dt.time, 'Type'])['Soc'].mean()
+                fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
+                fig.set_figheight(8)
+                # mean_data['mean'].plot(ax=ax1)
+                # plot_max(mean_data, ax1, 'mean')
+                power_data.xs((run_nr, 0), level=['RunId', 'iteration']).plot(ax=ax1)
+                plot_max(power_data.xs((run_nr, 0), level=['RunId', 'iteration']), ax1, None)
+                batt_data.xs((run_nr, 0), level=['RunId', 'iteration']).plot.area(ax=ax2, color='#07bd9c', alpha=.6, stacked=False)
+                batt_soc.xs((run_nr, 0, 'Battery'), level=['RunId', 'iteration', 'Type']).plot(ax=ax3, color='#f5692c')
+                ax2.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
+                ax3.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
+                ax1.set(ylabel='Effekt [kW]')
+                ax2.set(ylabel='Effekt [kW]')
+                ax3.set(ylabel='Soc [%]')
+                ax3.set(xlabel='Tid')
+                ax2.title.set_text('Stasjonært batteri')
 
-            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
-            fig.set_figheight(8)
-            # mean_data['mean'].plot(ax=ax1)
-            # plot_max(mean_data, ax1, 'mean')
-            power_data.xs(0, level='iteration').plot(ax=ax1)
-            plot_max(power_data.xs(0, level='iteration'), ax1, None)
-            batt_data.xs(0, level='iteration').plot.area(ax=ax2, color='#07bd9c', alpha=.6, stacked=False)
-            batt_soc.xs((0, 'Battery'), level=['iteration', 'Type']).plot(ax=ax3, color='#f5692c')
-            ax2.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
-            ax3.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
-            ax1.set(ylabel='Effekt [kW]')
-            ax2.set(ylabel='Effekt [kW]')
-            ax3.set(ylabel='Soc [%]')
-            ax3.set(xlabel='Tid')
-            ax2.title.set_text('Stasjonært batteri')
-
-            # plt.savefig(f'{path}/flex_load_plot_{run_nr}.pdf')
-            plt.show()
+                plt.savefig(f'{path}/flex_load_plot_{run_nr}.pdf')
+                plt.show()
 
         # ----------------------------------------------------------------------------------------------------------------------
 
         # Boxplot for mean power over all runs.
-        """
+        boxplot = pd.DataFrame()
+        for run_nr in range(runs):
+            boxplot[f'{run_nr}'] = sum_data.xs(run_nr, level='RunId')
         plt.figure()
-        mean_data.plot.box()
+        boxplot.plot.box()
+        plt.xlabel('Scenario nr.')
+        plt.ylabel('Effekt [kW]')
+        # plt.savefig(f'{path}/boxplot.pdf')
         plt.show()
-        """
-
-        # ----------------------------------------------------------------------------------------------------------------------
-        """
-        # Duration plot for mean power over all runs.
-        dur_data = mean_data
-        dur_data['interval'] = time_step  # time per step in hours.
-        dur_data.sort_values(by=['mean'], ascending=False, inplace=True)
-        dur_data['duration'] = dur_data['interval'].cumsum()
-        dur_data['percentage'] = dur_data['duration'] * 100 / sim_duration
-        dur_data.set_index('percentage', inplace=True)
-        reduced_dur = dur_data['mean'].drop_duplicates()
-
-        plt.figure()
-        reduced_dur.plot()
-        plt.xlabel('Percentage [%]')
-        plt.ylabel('Load [kW]')
-        plt.title('Duration curve')
-
-        # plt.savefig(f'{path}/duration_plot.pdf')
-        plt.show()
-        """
 
     return data
 
 
-def vehicle_plot(results, steps, run_nr):
+def vehicle_plot(results, steps, path, runs):
     data = pd.DataFrame(results)
     data.set_index(['iteration', 'Step'], inplace=True)
 
@@ -242,9 +240,9 @@ def vehicle_plot(results, steps, run_nr):
     start_soc = data.xs((0, 0), level=['iteration', 'Step'])['Soc']
     plt.figure()
     start_soc.hist(bins=range(int(data.Soc.max()) + 1))
-    plt.xlabel('SOC [%]')
+    plt.xlabel('SoC [%]')
     plt.ylabel('Number of vehicles')
-    plt.title('Starts soc')
+    plt.title('Start SoC')
     plt.show()
     """
 
@@ -274,6 +272,17 @@ def vehicle_plot(results, steps, run_nr):
     plt.xlabel('Time [h]')
     plt.ylabel('Number of vehicles')
     plt.title('Arrival times')
+    plt.show()
+    """
+
+    # Break type for all vehicles.
+    """
+    break_type = data.xs((0, 140), level=['iteration', 'Step'])['BreakType']
+    plt.figure()
+    break_type.groupby(break_type).count().plot(kind='bar')
+    plt.xlabel('Break type')
+    plt.ylabel('Number of vehicles')
+    plt.title('Break types')
     plt.show()
     """
 
@@ -321,12 +330,17 @@ def vehicle_plot(results, steps, run_nr):
     plt.show()
     """
 
-    wait_mean = data.groupby(['iteration', 'Step'])['Waiting'].mean()
+    #
+    wait = pd.DataFrame()
+    wait_mean = data.groupby(['RunId', 'iteration', 'Step'])['Waiting'].mean()
     wait_mean = wait_mean.xs(steps, level='Step')
+    for run_nr in range(runs):
+        wait[f'{run_nr}'] = wait_mean.xs(run_nr, level='RunId')
     plt.figure()
-    wait_mean.plot.box(label='Case 1')
-    # plt.xlabel()
+    wait.plot.box()
+    plt.xlabel('Scenario nr.')
     plt.ylabel('Tid [min]')
+    plt.savefig(f'{path}/waiting_plot.pdf')
     plt.show()
 
     return wait_mean
