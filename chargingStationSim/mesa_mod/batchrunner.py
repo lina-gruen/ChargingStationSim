@@ -34,6 +34,7 @@ def batch_run(
     parameters: Mapping[str, Union[Any, Iterable[Any]]],
     # We still retain the Optional[int] because users may set it to None (i.e. use all CPUs)
     number_processes: Optional[int] = 1,
+    run_id: int = 0,
     iterations: int = 1,
     data_collection_period: int = -1,
     max_steps: int = 1000,
@@ -49,6 +50,8 @@ def batch_run(
         Dictionary with model parameters over which to run the model. You can either pass single values or iterables.
     number_processes : int, optional
         Number of processes used, by default 1. Set this to None if you want to use all CPUs.
+    run_id : int, optional
+        ID number for the simulation that is run, by default 0
     iterations : int, optional
         Number of iterations for each parameter combination, by default 1
     data_collection_period : int, optional
@@ -65,9 +68,8 @@ def batch_run(
     """
 
     runs_list = []
-    for run_id in range(len(parameters)):
-        for iteration in range(iterations):
-            runs_list.append((run_id, iteration, parameters[run_id]))
+    for iteration in range(iterations):
+        runs_list.append((run_id, iteration, parameters))
 
     process_func = partial(
         _model_run_func,
