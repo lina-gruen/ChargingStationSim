@@ -60,6 +60,47 @@ def get_data(path, runs, flex):
     return data
 
 
+def make_subplots():
+    if runs > 2:
+        figure, axis = plt.subplots(nrows=math.ceil(runs / 2), ncols=2, layout='constrained', sharex=True, sharey=True)
+        figure.set_figwidth(10)
+        figure.set_figheight(8)
+    else:
+        figure, axis = plt.subplots(nrows=2, ncols=1, figsize=(8, 5), layout='constrained', sharex=True, sharey=True)
+        figure.set_figwidth(6)
+        figure.set_figheight(8)
+    return figure, axis
+
+
+def plot_max(df, ax, col_name, color):
+    """
+    Plots maximum value of time series.
+    """
+    if col_name is not None:
+        x_max = df[col_name].idxmax()
+        y_max = df[col_name].max()
+    else:
+        x_max = df.idxmax()
+        y_max = df.max()
+    if ax is not None:
+        ax.plot(x_max, y_max, marker='o', color=color)
+        ax.annotate(str(round(y_max)) + 'kW',  # this is the text
+                    (x_max, y_max),  # these are the coordinates to position the label
+                    textcoords="offset points",  # how to position the text
+                    xytext=(25, 6),  # distance from text to points (x,y)
+                    ha='center',
+                    fontweight='bold',
+                    color=color)
+    else:
+        plt.plot(x_max, y_max, marker='o', color=color)
+        plt.annotate(str(round(y_max)) + 'kW',  # this is the text
+                     (x_max, y_max),  # these are the coordinates to position the label
+                     textcoords="offset points",  # how to position the text
+                     xytext=(25, 6),  # distance from text to points (x,y)
+                     ha='center',
+                     color=color)
+
+
 def station_plot(data, flexibility, iterations, path, runs):
 
     # Development of the station power.
@@ -72,44 +113,6 @@ def station_plot(data, flexibility, iterations, path, runs):
             multi_run.xs((run_nr, iter_num), level=['RunId', iteration']).plot()
     plt.show()
     """
-
-    def make_subplots():
-        if runs > 2:
-            figure, axis = plt.subplots(nrows=math.ceil(runs / 2), ncols=2, layout='constrained', sharex=True, sharey=True)
-            figure.set_figwidth(10)
-            figure.set_figheight(8)
-        else:
-            figure, axis = plt.subplots(nrows=2, ncols=1, figsize=(8, 5), layout='constrained', sharex=True, sharey=True)
-            figure.set_figwidth(6)
-            figure.set_figheight(8)
-        return figure, axis
-
-    def plot_max(df, ax, col_name):
-        """
-        Plots maximum value of time series.
-        """
-        if col_name is not None:
-            x_max = df[col_name].idxmax()
-            y_max = df[col_name].max()
-        else:
-            x_max = df.idxmax()
-            y_max = df.max()
-        if ax is not None:
-            ax.plot(x_max, y_max, marker='o', color='#3F5D7D')
-            ax.annotate(str(round(y_max)) + 'kW',  # this is the text
-                        (x_max, y_max),  # these are the coordinates to position the label
-                        textcoords="offset points",  # how to position the text
-                        xytext=(25, 6),  # distance from text to points (x,y)
-                        ha='center',
-                        color='#3F5D7D')
-        else:
-            plt.plot(x_max, y_max, marker='o', color='#3F5D7D')
-            plt.annotate(str(round(y_max)) + 'kW',  # this is the text
-                         (x_max, y_max),  # these are the coordinates to position the label
-                         textcoords="offset points",  # how to position the text
-                         xytext=(25, 6),  # distance from text to points (x,y)
-                         ha='center',
-                         color='#3F5D7D')
 
     # ----------------------------------------------------------------------------------------------------------------------
 
@@ -188,11 +191,12 @@ def station_plot(data, flexibility, iterations, path, runs):
     """
 
     # ----------------------------------------------------------------------------------------------------------------------
+    # Plot mean power for each run separately.
     for run_nr in range(runs):
         run_data = mean_data.xs(run_nr, level='RunId')
-        plt.figure()
+        fig = plt.figure()
         run_data['mean'].plot()
-        plot_max(run_data, None, 'mean')
+        plot_max(run_data, None, 'mean', '#3F5D7D')
         over_line = (run_data['mean'] - run_data['std'])
         under_line = (run_data['mean'] + run_data['std'])
         plt.fill_between(run_data.index, under_line,
@@ -201,23 +205,24 @@ def station_plot(data, flexibility, iterations, path, runs):
         plt.ylabel('Effekt [kW]')
 
         if flexibility:
-            plt.savefig(f'{path}/mean_load_plot_{run_nr+1}_flex.pdf')
+            fig.savefig(f'{path}/mean_load_plot_{run_nr+1}_flex.pdf')
             plt.show()
         else:
-            plt.savefig(f'{path}/mean_load_plot_{run_nr+1}.pdf')
+            fig.savefig(f'{path}/mean_load_plot_{run_nr+1}.pdf')
             plt.show()
 
+    # Plot mean power for all runs in one figure.
     fig, axs = make_subplots()
     for run_nr, ax in enumerate(axs.flat):
         try:
             run_data = mean_data.xs(run_nr, level='RunId')
             run_data['mean'].plot(ax=ax)
-            plot_max(run_data, ax, 'mean')
+            plot_max(run_data, ax, 'mean', '#3F5D7D')
             over_line = (run_data['mean'] - run_data['std'])
             under_line = (run_data['mean'] + run_data['std'])
             ax.fill_between(run_data.index, under_line,
                             over_line, alpha=.3)
-            ax.set_title(f'Scenario {run_nr+1})', fontweight="bold")
+            ax.set_title(f'Scenario {run_nr+1})', fontweight='bold')
             ax.set_xlabel('Tid')
             ax.set_ylabel('Effekt [kW]')
         except KeyError:
@@ -234,47 +239,56 @@ def station_plot(data, flexibility, iterations, path, runs):
 
     # ----------------------------------------------------------------------------------------------------------------------
 
-    if flexibility:
-        for run_nr in range(runs):
-            power_data = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Power'].mean()
-            # power_data_mean = power_data.groupby(['Time']).mean()
-            batt_data = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Batt_power'].mean()
-            batt_soc = data.groupby(['RunId', 'iteration', data['Time'].dt.time, 'Type'])['Soc'].mean()
-
-            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
-            fig.set_figheight(8)
-            # mean_data['mean'].plot(ax=ax1)
-            # plot_max(mean_data, ax1, 'mean')
-            power_data.xs((run_nr, 0), level=['RunId', 'iteration']).plot(ax=ax1)
-            plot_max(power_data.xs((run_nr, 0), level=['RunId', 'iteration']), ax1, None)
-            batt_data.xs((run_nr, 0), level=['RunId', 'iteration']).plot.area(ax=ax2, color='#07bd9c', alpha=.6,
-                                                                              stacked=False)
-            batt_soc.xs((run_nr, 0, 'Battery'), level=['RunId', 'iteration', 'Type']).plot(ax=ax3, color='#f5692c')
-            ax2.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
-            ax3.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
-            ax1.set(ylabel='Effekt [kW]')
-            ax2.set(ylabel='Effekt [kW]')
-            ax3.set(ylabel='Soc [%]')
-            ax3.set(xlabel='Tid')
-            ax2.title.set_text('Stasjonært batteri')
-
-            plt.savefig(f'{path}/flex_load_plot_{run_nr+1}.pdf')
-            plt.show()
-
     # ----------------------------------------------------------------------------------------------------------------------
 
     # Boxplot for mean power over all runs.
     boxplot = pd.DataFrame()
     for run_nr in range(runs):
         boxplot[f'Scenario {run_nr+1}'] = sum_data.xs(run_nr, level='RunId')
-    plt.figure()
+    fig = plt.figure()
     boxplot.plot.box()
     # plt.xlabel('Scenario nr.')
     plt.ylabel('Effekt [kW]')
-    # plt.savefig(f'{path}/boxplot.pdf')
+    # fig.savefig(f'{path}/boxplot.pdf')
     plt.show()
 
     return data
+
+
+def battery_plot(data, flex_data, path, runs):
+    power_data = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Power'].mean()
+    power_flex = flex_data.groupby(['RunId', 'iteration', flex_data['Time'].dt.time])['Power'].mean()
+    # power_data_mean = power_data.groupby(['Time']).mean()
+    batt_data = flex_data.groupby(['RunId', 'iteration', flex_data['Time'].dt.time])['Batt_power'].mean()
+    batt_soc = flex_data.groupby(['RunId', 'iteration', flex_data['Time'].dt.time, 'Type'])['Soc'].mean()
+    for run_nr in range(runs):
+        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
+        fig.set_figheight(8)
+        # mean_data['mean'].plot(ax=ax1)
+        # plot_max(mean_data, ax1, 'mean')
+        # Plot power development with and without flexibility.
+        power_data.xs((run_nr, 0), level=['RunId', 'iteration']).plot(ax=ax1, color='#3F5D7D', label='Uten batteri')
+        plot_max(power_data.xs((run_nr, 0), level=['RunId', 'iteration']), ax1, None, '#3F5D7D')
+        power_flex.xs((run_nr, 0), level=['RunId', 'iteration']).plot(ax=ax1, color='#EE6666', label='Med batteri')
+        plot_max(power_flex.xs((run_nr, 0), level=['RunId', 'iteration']), ax1, None, '#EE6666')
+        # Plot power development for battery.
+        batt_data.xs((run_nr, 0), level=['RunId', 'iteration']).plot.area(ax=ax2, color='#07bd9c', alpha=.6,
+                                                                          stacked=False)
+        # Plot battery SoC development.
+        batt_soc.xs((run_nr, 0, 'Battery'), level=['RunId', 'iteration', 'Type']).plot(ax=ax3, color='#f5692c')
+
+        ax2.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
+        ax3.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
+        ax1.set(ylabel='Effekt [kW]')
+        ax1.legend()
+        fig.suptitle('Ladestasjon', fontweight='bold')
+        ax2.set(ylabel='Effekt [kW]')
+        ax3.set(ylabel='Soc [%]')
+        ax3.set(xlabel='Tid')
+        ax2.set_title('Stasjonært batteri', fontweight='bold')
+
+        fig.savefig(f'{path}/flex_load_plot_{run_nr+1}.pdf')
+        plt.show()
 
 
 def vehicle_plot(data, steps, path, runs):
@@ -381,11 +395,11 @@ def vehicle_plot(data, steps, path, runs):
     wait_mean = wait_mean.xs(steps, level='Step')
     for run_nr in range(runs):
         wait[f'Scenario {run_nr+1}'] = wait_mean.xs(run_nr, level='RunId')
-    plt.figure()
+    fig = plt.figure()
     wait.plot.box()
     # plt.xlabel('Scenario nr.')
     plt.ylabel('Tid [min]')
-    plt.savefig(f'{path}/waiting_plot.pdf')
+    fig.savefig(f'{path}/waiting_plot.pdf')
     plt.show()
 
     return wait_mean
@@ -394,9 +408,10 @@ def vehicle_plot(data, steps, path, runs):
 if __name__ == '__main__':
     sim_time = 24
     time_resolution = 10
-    flexibility = True
     num_iter = 10
     runs = 3
+    flexibility = True
+    plot_battery = True
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
 
     num_steps = int((sim_time / time_resolution) * 60) - 1
@@ -405,3 +420,9 @@ if __name__ == '__main__':
     # Run functions for visualization of the simulation results.
     station_data = station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
     vehicle_data = vehicle_plot(data, steps=num_steps, path=save_path, runs=runs)
+    if plot_battery and flexibility:
+        without_flex = get_data(save_path, runs, False)
+        battery_plot(without_flex, data, save_path, runs)
+    elif plot_battery and not flexibility:
+        with_flex = data = get_data(save_path, runs, True)
+        battery_plot(data, with_flex, save_path, runs)
