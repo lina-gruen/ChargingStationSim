@@ -18,7 +18,7 @@ class Vehicle(Agent):
     Base class for all vehicles in a vehicle fleet.
     """
 
-    def __init__(self, unique_id, station, random, arrival, params):
+    def __init__(self, unique_id, station, random, arrival, capacity, max_charge, soc):
         """
         Parameters
         ----------
@@ -42,13 +42,14 @@ class Vehicle(Agent):
         # Time per iteration step in minutes.
         self.resolution = station.resolution
         # Set the battery capacity and maximum charging power for the vehicle.
-        self.capacity, self.max_charge = self.set_params(params)
+        self.capacity = capacity
+        self.max_charge = max_charge
         # State of Charge of the vehicle battery in percentage.
-        self.soc = self.get_start_soc()
+        self.soc = soc
         # Arrival time at charging station.
         self.arrival = arrival
         # Maximum steps that the vehicle charges.
-        self.charge_steps = self.get_charge_steps(mean=45, std=2)
+        # self.charge_steps = self.get_charge_steps(mean=45, std=2)
         # Counter for the amount of minutes the vehicle has to stand in line at the station.
         self.wait_time = 0
         # Wished charging power when searching for a charger.
@@ -62,50 +63,50 @@ class Vehicle(Agent):
         # Current state of the vehicle.
         self.state = {'charging': False, 'arrived': False, 'waiting': False}
 
-    def get_start_soc(self):
-        """
-        Finds a soc for the vehicle from a probability distribution.
+    # def get_start_soc(self):
+    #    """
+    #    Finds a soc for the vehicle from a probability distribution.
+    #
+    #    Returns
+    #    -------
+    #    New soc for the vehicle.
+    #    """
+    #    # Gamma distribution with chosen parameter.
+    #    return self.rand_generator.gamma(shape=3, scale=6)
 
-        Returns
-        -------
-        New soc for the vehicle.
-        """
-        # Gamma distribution with chosen parameter.
-        return self.rand_generator.gamma(shape=3, scale=6)
+    # def set_params(self, params):
+    #    """
+    #    Finds a battery capacity and maximum charging power for the vehicle from a probability distribution.
+    #
+    #    Parameters
+    #    ----------
+    #    params: dict
+    #        Contains mean values for capacity and max_charge.
+    #
+    #    Returns
+    #    -------
+    #    Chosen battery capacity and maximum charging power
+    #    """
+    #    # Normal distribution with chosen mean and standard deviation.
+    #    capacity = self.rand_generator.choice(params['capacity'])
+    #    max_charge = self.rand_generator.choice(params['max_charge'])
+    #    return capacity, max_charge
 
-    def set_params(self, params):
-        """
-        Finds a battery capacity and maximum charging power for the vehicle from a probability distribution.
+    # def get_arrival(self):
+    #     """
+    #     Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
+    #
+    #     Returns
+    #     -------
+    #     New arrival time for the vehicle.
+    #     """
+    #     # Random choice from list with probability weights in p.
+    #     arrival_step = self.rand_generator.choice(self.station.timestamps, p=self.arrival_dist)
+    #     return arrival_step
 
-        Parameters
-        ----------
-        params: dict
-            Contains mean values for capacity and max_charge.
-
-        Returns
-        -------
-        Chosen battery capacity and maximum charging power
-        """
-        # Normal distribution with chosen mean and standard deviation.
-        capacity = self.rand_generator.choice(params['capacity'])
-        max_charge = self.rand_generator.choice(params['max_charge'])
-        return capacity, max_charge
-
-    def get_arrival(self):
-        """
-        Finds iteration at which the vehicle first arrives at a charging station from a probability distribution.
-
-        Returns
-        -------
-        New arrival time for the vehicle.
-        """
-        # Random choice from list with probability weights in p.
-        arrival_step = self.rand_generator.choice(self.station.timestamps, p=self.arrival_dist)
-        return arrival_step
-
-    def get_rest_type(self):
-        hour = pd.Timestamp(self.arrival).hour
-        return self.rand_generator.choice(['kort', 'lang'], p=self.rest_dist[hour])
+    # def get_rest_type(self):
+    #     hour = pd.Timestamp(self.arrival).hour
+    #     return self.rand_generator.choice(['kort', 'lang'], p=self.rest_dist[hour])
 
     def get_charge_steps(self, mean, std):
         """
@@ -237,20 +238,26 @@ class External(Vehicle):
     Subclass for all external vehicles.
     """
 
-    def __init__(self, unique_id, station, random, arrival, params, break_type):
-        super().__init__(unique_id, station, random, arrival, params)
+    def __init__(self, unique_id, station, random, arrival, capacity, max_charge, soc, break_type):
+        super().__init__(unique_id, station, random, arrival, capacity, max_charge, soc)
 
         self.type = 'External'
         self.break_type = break_type
 
         if self.break_type == 'ShortBreak':
             self.target_soc = 80
-            self.charge_steps = self.get_charge_steps(mean=30, std=2)
+            self.charge_steps = self.get_charge_steps(mean=35, std=2)
+            # target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
         else:
             self.target_soc = 100
-            self.charge_steps = self.get_charge_steps(mean=600, std=2)
+            # maximum steps that the vehicle has time to charge.
+            self.charge_steps = self.get_charge_steps(mean=480, std=2)
+            # target_power = (6000 / (self.capacity * self.resolution * self.charge_steps)) * \
+            #                (self.target_soc - self.soc)
 
-        target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
+        # target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
+        target_power = (6000 / (self.capacity * self.resolution * self.charge_steps)) * \
+                       (self.target_soc - self.soc)
         if target_power >= self.max_charge:
             self.target_power = self.max_charge
         else:
@@ -264,18 +271,26 @@ class Internal(Vehicle):
     Subclass for all internal vehicles.
     """
 
-    def __init__(self, unique_id, station, random, arrival, params, break_type):
-        super().__init__(unique_id, station, random, arrival, params)
+    def __init__(self, unique_id, station, random, arrival, capacity, max_charge, soc, break_type):
+        super().__init__(unique_id, station, random, arrival, capacity, max_charge, soc)
 
         self.type = 'Internal'
         self.break_type = break_type
-        if self.break_type == 'Internal':
-            self.target_power = 50
-            self.target_soc = 100
-            self.charge_steps = self.get_charge_steps(mean=350, std=2)
+        if self.break_type == 'ShortBreak':
+            self.target_soc = 80
+            # maximum steps that the vehicle has time to charge.
+            self.charge_steps = self.get_charge_steps(mean=120, std=2)
+            # target_power = ((self.target_soc * (self.capacity / 100)) - self.soc) / (self.resolution / 60)
         else:
-            self.target_power = 50
             self.target_soc = 100
-            self.charge_steps = self.get_charge_steps(mean=350, std=2)
+            self.charge_steps = self.get_charge_steps(mean=720, std=2)
+            # target_power = (6000 / (self.capacity * self.resolution * self.charge_steps)) * \
+            #                (self.target_soc - self.soc)
 
-
+        # target_power = ((self.target_soc * (self.capacity / 100)) - self.soc) / (self.resolution / 60)
+        target_power = (6000 / (self.capacity * self.resolution * self.charge_steps)) * \
+                       (self.target_soc - self.soc)
+        if target_power >= self.max_charge:
+            self.target_power = self.max_charge
+        else:
+            self.target_power = target_power
