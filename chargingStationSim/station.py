@@ -25,56 +25,62 @@ class Station(Model):
     """
 
     # Parameters for each vehicle group containing arrays to randomly select params from.
-    vehicle_params = {External: {'capacity': (500, 600, 700, 800, 900), 'max_charge': (350, 450, 500)},
-                      Internal: {'capacity': (500, 600, 700, 800, 900), 'max_charge': (350, 450, 500)}}
-
+    vehicle_params = None
     # Parameters for a stationary battery for flexibility.
-    battery_params = {'capacity': 1000, 'max_charge': 1000, 'soc': 90}
-
+    battery_params = None
     # Probability distribution for the arrival of vehicles at the station for a given hour in the day.
-    arrival_dist = [1.0, 1.0, 1.0, 1.1, 1.2, 1.9, 3.1, 3.6, 4.5, 5.0, 5.0, 5.0,
-                    4.9, 4.8, 4.6, 4.0, 3.4, 3.0, 2.6, 2.2, 1.9, 1.7, 1.3, 1.1]
-
+    arrival_dist = {'Internal': None,
+                    'External': None}
     # Probability distribution for a vehicles to have a short break at the station for a given hour in the day.
-    short_break = [0.50, 0.25, 0.25, 0.67, 0.95, 0.89, 0.88, 0.70, 0.83, 0.90, 0.84, 0.79, 0.70, 0.60, 0.55, 0.31, 0.21,
-                   0.23, 0.27, 0.24, 0.27, 0.27, 0.18, 0.28]
-
+    short_break = {'Internal': None,
+                   'External': None}
     # Probability distribution for a vehicles to have a long break at the station for a given hour in the day.
-    long_break = [0.50, 0.75, 0.75, 0.33, 0.05, 0.11, 0.12, 0.30, 0.17, 0.10, 0.16, 0.21, 0.30, 0.40, 0.45, 0.69, 0.79,
-                  0.77, 0.73, 0.76, 0.73, 0.73, 0.82, 0.72]
-
+    long_break = {'Internal': None,
+                  'External': None}
     # Will contain the probability of a vehicle having either a short or a long breaks for a given hour in the day.
-    break_dist = None
+    break_dist = {'Internal': None,
+                  'External': None}
 
     @classmethod
-    def set_arrival_dist(cls, resolution):
+    def set_params(cls, vehicle, battery, flexibility):
+        """
+        Sets new vehicle and battery parameters for the Station.
+        """
+        cls.vehicle_params = vehicle
+        if flexibility:
+            cls.battery_params = battery
+
+    @classmethod
+    def set_arrival_dist(cls, arrival, resolution):
         """
         Sets new probability distribution for the arrival of vehicles at the station.
         """
-        if not len(cls.arrival_dist) == 24:
-            raise KeyError('Invalid length given for arrival distribution.')
-        else:
-            extended_dist = []
-            for weight in cls.arrival_dist:
-                for _ in range(int(60 / resolution)):
-                    extended_dist.append(weight)
-            extended_dist = extended_dist / np.sum(extended_dist)
-            cls.arrival_dist = extended_dist
+        for vehicle in ('Internal', 'External'):
+            if not len(arrival[vehicle]) == 24:
+                raise KeyError(f'Invalid length given for {vehicle} arrival distribution.')
+            else:
+                extended_dist = []
+                for weight in arrival[vehicle]:
+                    for _ in range(int(60 / resolution)):
+                        extended_dist.append(weight)
+                extended_dist = extended_dist / np.sum(extended_dist)
+                cls.arrival_dist[vehicle] = extended_dist
 
     @classmethod
-    def set_break_dist(cls):
+    def set_break_dist(cls, short_break, long_break):
         """
         Sets new probability distribution for the type of mandatory rest periods vehicles have at the station.
         """
-        if not len(cls.short_break) == 24 or not len(cls.short_break) == 24:
-            raise KeyError('Invalid length given for one of the break distributions.')
-        else:
-            dist = []
-            for short, long in zip(cls.short_break, cls.long_break):
-                dist.append((short, long))
-            cls.break_dist = dist
+        for vehicle in ('Internal', 'External'):
+            if not len(short_break[vehicle]) == 24 or not len(long_break[vehicle]) == 24:
+                raise KeyError(f'Invalid length given for one of the {vehicle} break distributions.')
+            else:
+                dist = []
+                for short, long in zip(short_break[vehicle], long_break[vehicle]):
+                    dist.append((short, long))
+                cls.break_dist[vehicle] = dist
 
-    def __init__(self, num_external, num_internal, num_charger, battery, station_limit, time_resolution, sim_time):
+    def __init__(self, num_external, num_internal, num_charger, battery, station_limit, time_resolution):
         """
         Parameters
         ----------
@@ -84,13 +90,17 @@ class Station(Model):
         battery: bool
         station_limit: int
         time_resolution: int
-        sim_time: int
         """
         super().__init__()
 
+        if self.arrival_dist is None:
+            raise ValueError('No arrival distribution was given.')
+        elif self.short_break is None:
+            raise ValueError('No break distributions were given.')
+
         # Station-------------------------------------------------------------------------------------------------------
 
-        num_vehicles = {External: num_external, Internal: num_internal}
+        num_vehicles = {'External': num_external, 'Internal': num_internal}
 
         # Simulation----------------------------------------------------------------------------------------------------
 
@@ -101,7 +111,7 @@ class Station(Model):
         # Variable to stop simulation if set to False.
         self.running = True
         # Duration for a simulation in hours.
-        self.sim_time = sim_time
+        self.sim_time = 24
         # Time that passes for each step in minutes.
         self.resolution = time_resolution
         # The timestamp for the current step in a simulation.
@@ -121,30 +131,38 @@ class Station(Model):
             # Set the probability distribution for arrival times for the current vehicle type.
             # Vehicle.set_arrival_dist(self.arrival_dist, self.resolution)
             # Vehicle.set_rest_dist(self.short_break, self.long_break)
-            if vehicle_type == Internal:
-                for num in range(vehicle_num):
-                    arrival_time = rand_generator.choice(self.timestamps, p=self.arrival_dist)
-                    obj = vehicle_type(unique_id=counter + num,
-                                       station=self,
-                                       random=rand_generator,
-                                       params=self.vehicle_params[vehicle_type],
-                                       arrival=arrival_time,
-                                       break_type='Internal')
-                    self.schedule.add(obj)
-                counter += vehicle_num
-            else:
-                for num in range(vehicle_num):
-                    arrival_time = rand_generator.choice(self.timestamps, p=self.arrival_dist)
-                    hour = pd.Timestamp(arrival_time).hour
-                    break_type = rand_generator.choice(['ShortBreak', 'LongBreak'], p=self.break_dist[hour])
-                    obj = vehicle_type(unique_id=counter + num,
-                                       station=self,
-                                       random=rand_generator,
-                                       params=self.vehicle_params[vehicle_type],
-                                       arrival=arrival_time,
-                                       break_type=break_type)
-                    self.schedule.add(obj)
-                counter += vehicle_num
+
+            for num in range(vehicle_num):
+                arrival_time = rand_generator.choice(self.timestamps, p=self.arrival_dist[vehicle_type])
+                hour = pd.Timestamp(arrival_time).hour
+                break_type = rand_generator.choice(['ShortBreak', 'LongBreak'], p=self.break_dist[vehicle_type][hour])
+                cap = rand_generator.choice(self.vehicle_params[vehicle_type]['capacity'])
+                charge = rand_generator.choice(self.vehicle_params[vehicle_type]['max_charge'])
+                soc = rand_generator.gamma(shape=3, scale=6)
+                obj = eval(vehicle_type)(unique_id=counter + num,
+                                         station=self,
+                                         random=rand_generator,
+                                         capacity=cap,
+                                         max_charge=charge,
+                                         arrival=arrival_time,
+                                         soc=soc,
+                                         break_type=break_type)
+                self.schedule.add(obj)
+            counter += vehicle_num
+
+            #else:
+            #    for num in range(vehicle_num):
+            #        arrival_time = rand_generator.choice(self.timestamps, p=self.arrival_dist['external'])
+            #        hour = pd.Timestamp(arrival_time).hour
+            #        break_type = rand_generator.choice(['ShortBreak', 'LongBreak'], p=self.break_dist['external'][hour])
+            #        obj = vehicle_type(unique_id=counter + num,
+            #                           station=self,
+            #                           random=rand_generator,
+            #                           params=self.vehicle_params[vehicle_type],
+            #                           arrival=arrival_time,
+            #                           break_type=break_type)
+            #        self.schedule.add(obj)
+            #    counter += vehicle_num
 
         if battery:
             #
@@ -165,7 +183,7 @@ class Station(Model):
             model_reporters={'Power': [self.get_station_power, [battery]], 'Time': 'step_time',
                              'Batt_power': 'batt_power'},
             agent_reporters={'Soc': 'soc', 'Arrival': 'arrival', 'Capacity': 'capacity', 'Type': 'type',
-                             'power': 'power',  'Waiting': 'wait_time', 'BreakType': 'break_type'}
+                             'power': 'power', 'Waiting': 'wait_time', 'BreakType': 'break_type'}
         )
 
     def get_station_power(self, battery):
