@@ -62,11 +62,11 @@ def get_data(path, runs, flex):
 
 def make_subplots():
     if runs > 2:
-        figure, axis = plt.subplots(nrows=math.ceil(runs / 2), ncols=2, layout='constrained', sharex=True, sharey=True)
+        figure, axis = plt.subplots(nrows=math.ceil(runs / 2), ncols=2, layout='constrained', sharex=True)
         figure.set_figwidth(10)
         figure.set_figheight(8)
     else:
-        figure, axis = plt.subplots(nrows=2, ncols=1, figsize=(8, 5), layout='constrained', sharex=True, sharey=True)
+        figure, axis = plt.subplots(nrows=2, ncols=1, figsize=(8, 5), layout='constrained', sharex=True)
         figure.set_figwidth(6)
         figure.set_figheight(8)
     return figure, axis
@@ -115,10 +115,9 @@ def station_plot(data, flexibility, iterations, path, runs):
     """
 
     # ----------------------------------------------------------------------------------------------------------------------
-
     if not flexibility:
         # Development of station power by vehicle type.
-        type_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['Type']])['power'].sum()
+        type_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['Type'], data['BreakType']])['power'].sum()
         type_data_mean = type_data.groupby(['RunId', 'Time', 'Type']).mean()
         type_mean = pd.DataFrame()
         type_mean['Internal'] = type_data_mean.xs('Internal', level='Type')
@@ -139,18 +138,20 @@ def station_plot(data, flexibility, iterations, path, runs):
 
     # ----------------------------------------------------------------------------------------------------------------------
 
-        break_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['BreakType']])[
-            'power'].sum()
-        break_data_mean = break_data.groupby(['RunId', 'Time', 'BreakType']).mean()
+        #break_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['BreakType']])[
+        #    'power'].sum()
+        break_data_mean = type_data.groupby(['RunId', 'Time', 'Type', 'BreakType']).mean()
         break_mean = pd.DataFrame()
-        break_mean['Internal'] = break_data_mean.xs('Internal', level='BreakType')
-        break_mean['ShortBreak'] = break_data_mean.xs('ShortBreak', level='BreakType')
-        break_mean['LongBreak'] = break_data_mean.xs('LongBreak', level='BreakType')
+        break_mean['Internal_short'] = break_data_mean.xs(('Internal', 'ShortBreak'), level=['Type', 'BreakType'])
+        break_mean['Internal_long'] = break_data_mean.xs(('Internal', 'LongBreak'), level=['Type', 'BreakType'])
+        break_mean['External_short'] = break_data_mean.xs(('External', 'ShortBreak'), level=['Type', 'BreakType'])
+        break_mean['External_long'] = break_data_mean.xs(('External', 'LongBreak'), level=['Type', 'BreakType'])
 
         fig, axs = make_subplots()
         for run_nr, ax in enumerate(axs.flat):
             try:
-                break_mean.xs(run_nr, level='RunId').plot.area(ax=ax, alpha=.8)
+                break_mean.xs(run_nr, level='RunId').plot(ax=ax)
+                # break_mean.xs(run_nr, level='RunId').plot.area(ax=ax, stacked=False, alpha=.8)
                 ax.set_title(f'Scenario {run_nr + 1})', fontweight="bold")
                 ax.set_xlabel('Tid')
                 ax.set_ylabel('Effekt [kW]')
@@ -172,9 +173,11 @@ def station_plot(data, flexibility, iterations, path, runs):
 
     # Mean power and standard deviation for all runs.
     mean_data = pd.DataFrame()
-    sum_data = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['power'].sum()
-    mean_data['mean'] = sum_data.groupby(['RunId', 'Time']).mean()
-    mean_data['std'] = sum_data.groupby(['RunId', 'Time']).std()
+    sum_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time])['power'].sum()
+    sum_mean = sum_data.groupby(['RunId', 'Time']).mean()
+    sum_std = sum_data.groupby(['RunId', 'Time']).std()
+    mean_data['mean'] = sum_mean
+    mean_data['std'] = sum_std
     # mean_data['max'] = mean_data['mean'].max()
 
     """
@@ -242,6 +245,7 @@ def station_plot(data, flexibility, iterations, path, runs):
     # ----------------------------------------------------------------------------------------------------------------------
 
     # Boxplot for mean power over all runs.
+    """
     boxplot = pd.DataFrame()
     for run_nr in range(runs):
         boxplot[f'Scenario {run_nr+1}'] = sum_data.xs(run_nr, level='RunId')
@@ -251,8 +255,7 @@ def station_plot(data, flexibility, iterations, path, runs):
     plt.ylabel('Effekt [kW]')
     # fig.savefig(f'{path}/boxplot.pdf')
     plt.show()
-
-    return data
+    """
 
 
 def battery_plot(data, flex_data, path, runs):
@@ -402,24 +405,21 @@ def vehicle_plot(data, steps, path, runs):
     fig.savefig(f'{path}/waiting_plot.pdf')
     plt.show()
 
-    return wait_mean
-
 
 if __name__ == '__main__':
-    sim_time = 24
-    time_resolution = 10
-    num_iter = 10
-    runs = 3
-    flexibility = True
-    plot_battery = True
+    time_resolution = 5
+    num_iter = 100
+    runs = 4
+    flexibility = False
+    plot_battery = False
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
 
-    num_steps = int((sim_time / time_resolution) * 60) - 1
+    num_steps = int((24 / time_resolution) * 60) - 1
     set_plotstyle()
     data = get_data(save_path, runs, flexibility)
     # Run functions for visualization of the simulation results.
-    station_data = station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
-    vehicle_data = vehicle_plot(data, steps=num_steps, path=save_path, runs=runs)
+    station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
+    vehicle_plot(data, steps=num_steps, path=save_path, runs=runs)
     if plot_battery and flexibility:
         without_flex = get_data(save_path, runs, False)
         battery_plot(without_flex, data, save_path, runs)
