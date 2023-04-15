@@ -60,13 +60,15 @@ def get_data(path, runs, flex):
     return data
 
 
-def make_subplots():
+def make_subplots(share_x, share_y):
     if runs > 2:
-        figure, axis = plt.subplots(nrows=math.ceil(runs / 2), ncols=2, layout='constrained', sharex=True)
+        figure, axis = plt.subplots(nrows=math.ceil(runs / 2), ncols=2, layout='tight',
+                                    sharex=share_x, sharey=share_y)
         figure.set_figwidth(10)
         figure.set_figheight(8)
     else:
-        figure, axis = plt.subplots(nrows=2, ncols=1, figsize=(8, 5), layout='constrained', sharex=True)
+        figure, axis = plt.subplots(nrows=2, ncols=1, figsize=(8, 5), layout='tight',
+                                    sharex=share_x, sharey=share_y)
         figure.set_figwidth(6)
         figure.set_figheight(8)
     return figure, axis
@@ -117,15 +119,16 @@ def station_plot(data, flexibility, iterations, path, runs):
     # ----------------------------------------------------------------------------------------------------------------------
     if not flexibility:
         # Development of station power by vehicle type.
-        type_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['Type'], data['BreakType']])['power'].sum()
+        type_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['Type']])['power'].sum()
         type_data_mean = type_data.groupby(['RunId', 'Time', 'Type']).mean()
         type_mean = pd.DataFrame()
-        type_mean['Internal'] = type_data_mean.xs('Internal', level='Type')
-        type_mean['External'] = type_data_mean.xs('External', level='Type')
+        type_mean['Interne'] = type_data_mean.xs('Internal', level='Type')
+        type_mean['Eksterne'] = type_data_mean.xs('External', level='Type')
 
-        fig, axs = make_subplots()
+        fig, axs = make_subplots(share_x=True, share_y=False)
         for run_nr, ax in enumerate(axs.flat):
             try:
+                # type_mean.xs(run_nr, level='RunId').plot(ax=ax)
                 type_mean.xs(run_nr, level='RunId').plot.area(ax=ax, stacked=False, alpha=.8)
                 ax.set_title(f'Scenario {run_nr + 1})', fontweight="bold")
                 ax.set_xlabel('Tid')
@@ -138,16 +141,17 @@ def station_plot(data, flexibility, iterations, path, runs):
 
     # ----------------------------------------------------------------------------------------------------------------------
 
-        #break_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['BreakType']])[
-        #    'power'].sum()
-        break_data_mean = type_data.groupby(['RunId', 'Time', 'Type', 'BreakType']).mean()
+        break_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['Type'],
+                                  data['BreakType']])['power'].sum()
+        break_data_mean = break_data.groupby(['RunId', 'Time', 'Type', 'BreakType']).mean()
         break_mean = pd.DataFrame()
-        break_mean['Internal_short'] = break_data_mean.xs(('Internal', 'ShortBreak'), level=['Type', 'BreakType'])
-        break_mean['Internal_long'] = break_data_mean.xs(('Internal', 'LongBreak'), level=['Type', 'BreakType'])
-        break_mean['External_short'] = break_data_mean.xs(('External', 'ShortBreak'), level=['Type', 'BreakType'])
-        break_mean['External_long'] = break_data_mean.xs(('External', 'LongBreak'), level=['Type', 'BreakType'])
+        break_mean['Int.: kort ladeøkt'] = break_data_mean.xs(('Internal', 'ShortBreak'), level=['Type', 'BreakType'])
+        break_mean['Int.: middels ladeøkt'] = break_data_mean.xs(('Internal', 'MediumBreak'), level=['Type', 'BreakType'])
+        break_mean['Int.: lang ladeøkt'] = break_data_mean.xs(('Internal', 'LongBreak'), level=['Type', 'BreakType'])
+        break_mean['Eks.: kort ladeøkt'] = break_data_mean.xs(('External', 'ShortBreak'), level=['Type', 'BreakType'])
+        break_mean['Eks.: lang ladeøkt'] = break_data_mean.xs(('External', 'LongBreak'), level=['Type', 'BreakType'])
 
-        fig, axs = make_subplots()
+        fig, axs = make_subplots(share_x=True, share_y=False)
         for run_nr, ax in enumerate(axs.flat):
             try:
                 break_mean.xs(run_nr, level='RunId').plot(ax=ax)
@@ -215,7 +219,7 @@ def station_plot(data, flexibility, iterations, path, runs):
             plt.show()
 
     # Plot mean power for all runs in one figure.
-    fig, axs = make_subplots()
+    fig, axs = make_subplots(share_x=True, share_y=False)
     for run_nr, ax in enumerate(axs.flat):
         try:
             run_data = mean_data.xs(run_nr, level='RunId')
@@ -392,16 +396,28 @@ def vehicle_plot(data, steps, path, runs):
     plt.show()
     """
 
-    #
-    wait = pd.DataFrame()
-    wait_mean = data.groupby(['RunId', 'iteration', 'Step'])['Waiting'].mean()
+    # Distribution of waiting times for all scenarios.
+
+    wait_mean = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Waiting'].mean()
     wait_mean = wait_mean.xs(steps, level='Step')
-    for run_nr in range(runs):
-        wait[f'Scenario {run_nr+1}'] = wait_mean.xs(run_nr, level='RunId')
-    fig = plt.figure()
-    wait.plot.box()
-    # plt.xlabel('Scenario nr.')
-    plt.ylabel('Tid [min]')
+    fig, axs = make_subplots(share_x=False, share_y=False)
+    for run_nr, ax in enumerate(axs.flat):
+        try:
+            wait = pd.DataFrame()
+            wait[f'Scenario {run_nr + 1}\ninterne'] = wait_mean.xs((run_nr, 'Internal'), level=['RunId', 'Type'])
+            wait[f'Scenario {run_nr + 1}\neksterne'] = wait_mean.xs((run_nr, 'External'), level=['RunId', 'Type'])
+            wait.plot.box(ax=ax)
+            ax.set_ylabel('Tid [min]')
+            ax.set_title(f'Scenario {run_nr + 1})', fontweight="bold")
+        except KeyError:
+            ax.grid(False)
+            plt.show()
+    # fig, axs = plt.subplots()
+    # fig.set_figwidth(8)
+    # wait[f'Scenario {run_nr + 1} \n interne'] = wait_mean.xs((run_nr, 'Internal'), level=['RunId', 'Type'])
+    # wait[f'Scenario {run_nr + 1} \n eksterne'] = wait_mean.xs((run_nr, 'External'), level=['RunId', 'Type'])
+    # wait.plot.box(ax=axs)
+    fig.tight_layout(w_pad=0.5, h_pad=1.0)
     fig.savefig(f'{path}/waiting_plot.pdf')
     plt.show()
 
@@ -409,7 +425,7 @@ def vehicle_plot(data, steps, path, runs):
 if __name__ == '__main__':
     time_resolution = 5
     num_iter = 100
-    runs = 4
+    runs = 6
     flexibility = False
     plot_battery = False
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
