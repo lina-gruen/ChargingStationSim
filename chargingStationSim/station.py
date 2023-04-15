@@ -67,26 +67,27 @@ class Station(Model):
                 cls.arrival_dist[vehicle] = extended_dist
 
     @classmethod
-    def set_break_dist(cls, short_break, long_break):
+    def set_break_dist(cls, short_break, medium_break, long_break):
         """
         Sets new probability distribution for the type of mandatory rest periods vehicles have at the station.
         """
         for vehicle in ('Internal', 'External'):
-            if not len(short_break[vehicle]) == 24 or not len(long_break[vehicle]) == 24:
+            if not len(short_break[vehicle]) == 24 or not len(medium_break[vehicle]) == 24 \
+                    or not len(long_break[vehicle]) == 24:
                 raise KeyError(f'Invalid length given for one of the {vehicle} break distributions.')
             else:
                 dist = []
-                for short, long in zip(short_break[vehicle], long_break[vehicle]):
-                    dist.append((short, long))
+                for short, medium, long in zip(short_break[vehicle], medium_break[vehicle], long_break[vehicle]):
+                    dist.append((short, medium, long))
                 cls.break_dist[vehicle] = dist
 
-    def __init__(self, num_external, num_internal, num_charger, battery, station_limit, time_resolution):
+    def __init__(self, num_external, num_internal, chargers, battery, station_limit, time_resolution):
         """
         Parameters
         ----------
         num_external: int
         num_internal : int
-        num_charger: int
+        chargers: int
         battery: bool
         station_limit: int
         time_resolution: int
@@ -128,14 +129,10 @@ class Station(Model):
 
         counter = 0
         for vehicle_type, vehicle_num in num_vehicles.items():
-            # Set the probability distribution for arrival times for the current vehicle type.
-            # Vehicle.set_arrival_dist(self.arrival_dist, self.resolution)
-            # Vehicle.set_rest_dist(self.short_break, self.long_break)
-
             for num in range(vehicle_num):
                 arrival_time = rand_generator.choice(self.timestamps, p=self.arrival_dist[vehicle_type])
                 hour = pd.Timestamp(arrival_time).hour
-                break_type = rand_generator.choice(['ShortBreak', 'LongBreak'], p=self.break_dist[vehicle_type][hour])
+                break_type = rand_generator.choice(['ShortBreak', 'MediumBreak', 'LongBreak'], p=self.break_dist[vehicle_type][hour])
                 cap = rand_generator.choice(self.vehicle_params[vehicle_type]['capacity'])
                 charge = rand_generator.choice(self.vehicle_params[vehicle_type]['max_charge'])
                 soc = rand_generator.gamma(shape=3, scale=6)
@@ -150,7 +147,7 @@ class Station(Model):
                 self.schedule.add(obj)
             counter += vehicle_num
 
-            #else:
+            # else:
             #    for num in range(vehicle_num):
             #        arrival_time = rand_generator.choice(self.timestamps, p=self.arrival_dist['external'])
             #        hour = pd.Timestamp(arrival_time).hour
@@ -176,7 +173,9 @@ class Station(Model):
             self.schedule.add(obj)
 
         # List to contain all chargers at the station.
-        self.charge_list = [Charger(power=350, num_sockets=4) for _ in range(num_charger)]
+        self.charge_list = []
+        for power, num in chargers.items():
+            self.charge_list.extend([Charger(power=power, num_sockets=4) for _ in range(num)])
 
         # Data collector for model and agent variables.
         self.datacollector = DataCollector(
