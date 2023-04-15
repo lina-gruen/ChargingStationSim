@@ -246,15 +246,16 @@ class External(Vehicle):
 
         if self.break_type == 'ShortBreak':
             self.target_soc = 80
+            # maximum steps that the vehicle has time to charge.
             self.charge_steps = self.get_charge_steps(mean=35, std=2)
         else:
             self.target_soc = 100
-            # maximum steps that the vehicle has time to charge.
-            self.charge_steps = self.get_charge_steps(mean=480, std=2)
+            self.charge_steps = self.get_charge_steps(mean=470, std=2)
 
         # target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
         target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
                        (self.target_soc - self.soc)
+
         if target_power >= self.max_charge:
             self.target_power = self.max_charge
         else:
@@ -273,13 +274,17 @@ class Internal(Vehicle):
 
         self.type = 'Internal'
         self.break_type = break_type
+
         if self.break_type == 'ShortBreak':
             self.target_soc = 80
             # maximum steps that the vehicle has time to charge.
             self.charge_steps = self.get_charge_steps(mean=120, std=2)
+        elif self.break_type == 'MediumBreak':
+            self.target_soc = 100
+            self.charge_steps = self.get_charge_steps(mean=270, std=2)
         else:
             self.target_soc = 100
-            self.charge_steps = self.get_charge_steps(mean=720, std=2)
+            self.charge_steps = self.get_charge_steps(mean=630, std=2)
 
         # target_power = ((self.target_soc * (self.capacity / 100)) - self.soc) / (self.resolution / 60)
         target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
