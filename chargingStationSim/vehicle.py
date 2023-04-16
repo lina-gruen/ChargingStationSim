@@ -261,6 +261,34 @@ class External(Vehicle):
         else:
             self.target_power = target_power
 
+    def find_charger(self):
+        """
+        Finds charger that can deliver the requested power. If nothing is available the vehicle waits until next step.
+        """
+        # All charger that are available and the power they can deliver.
+        available = [(charger, charger.accessible_power) for charger in self.station.charge_list if charger.available]
+        if not available:
+            if self.state['waiting']:
+                self.charge_steps -= 1
+                self.wait_time += self.resolution
+                return
+            elif self.charge_steps == 0:
+                self.state['arrived'] = True
+                return
+            else:
+                self.state['waiting'] = True
+                self.charge_steps -= 1
+                self.wait_time += self.resolution
+                return
+        # Find the charger for which the accessible power is closest to the target power of the vehicle.
+        charger = available[min(range(len(available)), key=lambda num: abs(available[num][1] - self.target_power))]
+        # If what's available is less or equal to the requested power we take all the available power:
+        if charger[1] <= self.target_power:
+            self.connect_charger(charger[0], charger[1])
+        # If the requested power is less than what's available we only take what was requested:
+        else:
+            self.connect_charger(charger[0], self.target_power)
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 
