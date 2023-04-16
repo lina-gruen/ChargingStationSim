@@ -57,6 +57,7 @@ def get_data(path, runs, flex):
             results.append(pd.read_csv(path + f'/simulation_{run_id}.csv'))
     data = pd.concat(results)
     data['Time'] = pd.to_datetime(data['Time'])
+    data['Arrival'] = pd.to_datetime(data['Arrival'])
     return data
 
 
@@ -299,7 +300,7 @@ def battery_plot(data, flex_data, path, runs):
 
 
 def vehicle_plot(data, steps, path, runs):
-    data.set_index(['iteration', 'Step'], inplace=True)
+    # data.set_index(['iteration', 'Step'], inplace=True)
 
     # Start soc for all vehicles.
     """
@@ -332,13 +333,15 @@ def vehicle_plot(data, steps, path, runs):
     # Chosen arrival times for each vehicle.
     """
     # xs() returns a specific section of the dataframe based on index level and row values.
-    start_arrival = data.xs((0, 0), level=['iteration', 'Step'])['Arrival']
-    plt.figure()
-    start_arrival.groupby(start_arrival.dt.hour).count().plot(kind='bar')
-    plt.xlabel('Time [h]')
-    plt.ylabel('Number of vehicles')
-    plt.title('Arrival times')
-    plt.show()
+    arrival_data = data.set_index(['RunId', 'iteration', 'Step', 'Type'])
+    for run_nr in range(runs):
+        start_arrival = arrival_data.xs((run_nr, 0, 0, 'External'), level=['RunId', 'iteration', 'Step', 'Type'])['Arrival']
+        plt.figure()
+        start_arrival.groupby([start_arrival.dt.hour]).count().plot(kind='bar')
+        plt.xlabel('Time [h]')
+        plt.ylabel('Number of vehicles')
+        plt.title('Arrival times')
+        plt.show()
     """
 
     # Break type for all vehicles.
@@ -425,9 +428,9 @@ def vehicle_plot(data, steps, path, runs):
 if __name__ == '__main__':
     time_resolution = 5
     num_iter = 100
-    runs = 6
-    flexibility = False
-    plot_battery = False
+    runs = 3
+    flexibility = True
+    plot_battery = True
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
 
     num_steps = int((24 / time_resolution) * 60) - 1
