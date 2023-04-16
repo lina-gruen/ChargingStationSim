@@ -181,9 +181,9 @@ class Station(Model):
         self.datacollector = DataCollector(
             model_reporters={'Power': [self.get_station_power, [battery]], 'Time': 'step_time',
                              'Batt_power': 'batt_power'},
-            agent_reporters={'Soc': 'soc', 'Arrival': 'arrival', 'Capacity': 'capacity', 'Type': 'type',
-                             'power': 'power', 'Waiting': 'wait_time', 'BreakType': 'break_type'}
-        )
+            agent_reporters={'Soc': 'soc', 'Arrival': 'arrival', 'Capacity': 'capacity',
+                             'Type': 'type', 'BreakType': 'break_type', 'power': 'power',
+                             'Waiting': 'wait_time', 'Charged': 'no_charge'})
 
     def get_station_power(self, battery):
         """
