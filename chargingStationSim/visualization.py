@@ -299,7 +299,7 @@ def battery_plot(data, flex_data, path, runs):
         plt.show()
 
 
-def vehicle_plot(data, steps, path, runs):
+def vehicle_plot(data, steps, iters, runs, path):
     # data.set_index(['iteration', 'Step'], inplace=True)
 
     # Start soc for all vehicles.
@@ -399,6 +399,16 @@ def vehicle_plot(data, steps, path, runs):
     plt.show()
     """
 
+    # Distribution of how many external leave the station before charging.
+    charged = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Charged'].sum()
+    charged = charged.xs((0, iters-1, steps, 'External'), level=['RunId', 'iteration', 'Step', 'Type'])
+    plt.figure()
+    charged.plot(kind='bar')
+    plt.xlabel('Time [min]')
+    plt.ylabel('Antall kjøretøy')
+    plt.title('Antall externe som ikke ladet')
+    plt.show()
+
     # Distribution of waiting times for all scenarios.
 
     wait_mean = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Waiting'].mean()
@@ -428,17 +438,17 @@ def vehicle_plot(data, steps, path, runs):
 if __name__ == '__main__':
     time_resolution = 5
     num_iter = 100
-    runs = 3
-    flexibility = True
-    plot_battery = True
+    runs = 1
+    flexibility = False
+    plot_battery = False
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
 
     num_steps = int((24 / time_resolution) * 60) - 1
     set_plotstyle()
     data = get_data(save_path, runs, flexibility)
     # Run functions for visualization of the simulation results.
-    station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
-    vehicle_plot(data, steps=num_steps, path=save_path, runs=runs)
+    # station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
+    vehicle_plot(data, steps=num_steps, iters=num_iter, runs=runs, path=save_path)
     if plot_battery and flexibility:
         without_flex = get_data(save_path, runs, False)
         battery_plot(without_flex, data, save_path, runs)
