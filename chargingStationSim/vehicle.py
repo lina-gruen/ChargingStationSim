@@ -62,6 +62,8 @@ class Vehicle(Agent):
         self.charger = None
         # Current state of the vehicle.
         self.state = {'charging': False, 'arrived': False, 'waiting': False}
+        # If the vehicle ever got to charge in the simulation.
+        self.no_charge = False
 
     # def get_start_soc(self):
     #    """
@@ -182,11 +184,9 @@ class Vehicle(Agent):
         if not available:
             if not self.state['waiting']:
                 self.state['waiting'] = True
-                self.wait_time += self.resolution
-                return
-            else:
-                self.wait_time += self.resolution
-                return
+            self.charge_steps -= 1
+            self.wait_time += self.resolution
+            return
         # Find the charger for which the accessible power is closest to the target power of the vehicle.
         charger = available[min(range(len(available)), key=lambda num: abs(available[num][1] - self.target_power))]
         # If what's available is less or equal to the requested power we take all the available power:
@@ -268,18 +268,15 @@ class External(Vehicle):
         # All charger that are available and the power they can deliver.
         available = [(charger, charger.accessible_power) for charger in self.station.charge_list if charger.available]
         if not available:
-            if self.state['waiting']:
-                self.charge_steps -= 1
-                self.wait_time += self.resolution
-                return
-            elif self.charge_steps == 0:
-                self.state['arrived'] = True
-                return
-            else:
+            if not self.state['waiting']:
                 self.state['waiting'] = True
-                self.charge_steps -= 1
-                self.wait_time += self.resolution
-                return
+            self.charge_steps -= 1
+            self.wait_time += self.resolution
+            if self.waiting_time == 20:
+                self.state['waiting'] = False
+                self.state['arrived'] = True
+                self.no_charge = True
+            return
         # Find the charger for which the accessible power is closest to the target power of the vehicle.
         charger = available[min(range(len(available)), key=lambda num: abs(available[num][1] - self.target_power))]
         # If what's available is less or equal to the requested power we take all the available power:
