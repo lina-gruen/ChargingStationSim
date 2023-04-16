@@ -227,7 +227,7 @@ class External(Vehicle):
                 self.state['waiting'] = True
             self.charge_steps -= 1
             self.wait_time += self.resolution
-            if self.waiting_time == 20:
+            if self.wait_time == 20:
                 self.state['waiting'] = False
                 self.state['arrived'] = True
                 self.no_charge = True
