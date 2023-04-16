@@ -56,7 +56,7 @@ class Battery(Agent):
         else:
             self.full = False
         # The upper power limit at the station for when the battery starts discharging.
-        self.limit = station_limit - 100
+        self.limit = station_limit
 
         self.arrival = None
         self.break_type = None
