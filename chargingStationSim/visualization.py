@@ -401,9 +401,10 @@ def vehicle_plot(data, steps, iters, runs, path):
 
     # Distribution of how many external leave the station before charging.
     charged = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Charged'].sum()
-    charged = charged.xs((0, iters-1, steps, 'External'), level=['RunId', 'iteration', 'Step', 'Type'])
+    charged_mean = charged.groupby(['RunId', 'Step', 'Type']).mean()
+    charged_mean = round(charged_mean.xs((steps, 'External'), level=['Step', 'Type']), 0)
     plt.figure()
-    charged.plot(kind='bar')
+    charged_mean.plot(kind='bar')
     plt.xlabel('Time [min]')
     plt.ylabel('Antall kjøretøy')
     plt.title('Antall externe som ikke ladet')
@@ -438,7 +439,7 @@ def vehicle_plot(data, steps, iters, runs, path):
 if __name__ == '__main__':
     time_resolution = 5
     num_iter = 100
-    runs = 1
+    runs = 3
     flexibility = False
     plot_battery = False
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
