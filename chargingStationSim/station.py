@@ -137,7 +137,7 @@ class Station(Model):
                 cap = rand_generator.choice(self.vehicle_params[vehicle_type]['capacity'])
                 charge = rand_generator.choice(self.vehicle_params[vehicle_type]['max_charge'])
                 if vehicle_type is 'External':
-                    soc = rand_generator.normal(loc=50, scale=2)
+                    soc = rand_generator.normal(loc=50, scale=6)
                 else:
                     soc = rand_generator.uniform(low=20, high=70)
                 obj = eval(vehicle_type)(unique_id=counter + num,
