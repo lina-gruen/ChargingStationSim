@@ -26,14 +26,16 @@ class Vehicle(Agent):
             Id for the vehicle.
         station: mesa.model
             Instance of the station that contains the vehicle.
+        random: numpy random generator instance
+
         arrival: pandas timestamp
             The arrival time of the vehicle at the station.
-        params: dict
-            Parameters for the vehicle.
-                capacity: int
-                    Max kWh rating of the vehicle battery.
-                max_charge: int
-                    Maximum power at which the vehicle can charge in kW.
+        capacity: int
+            Max kWh rating of the vehicle battery.
+        max_charge: int
+            Maximum power at which the vehicle can charge in kW.
+        soc: float
+            State of Charge of the battery at initialization.
         """
         super().__init__(unique_id, station)
 
@@ -61,7 +63,7 @@ class Vehicle(Agent):
         # The charger the vehicle is using. None if not charging.
         self.charger = None
         # Current state of the vehicle.
-        self.state = {'charging': False, 'arrived': False, 'waiting': False}
+        self.state = dict(charging=False, done=False, waiting=False)
         # If the vehicle ever got to charge in the simulation.
         self.no_charge = False
 
@@ -105,9 +107,9 @@ class Vehicle(Agent):
         self.charge_steps -= 1
         if new_soc >= self.target_soc:
             self.soc = self.target_soc
-            self.state['arrived'] = True
+            self.state['done'] = True
         elif self.charge_steps == 0:
-            self.state['arrived'] = True
+            self.state['done'] = True
             self.soc = round(new_soc, 2)
         else:
             self.soc = round(new_soc, 2)
@@ -155,7 +157,7 @@ class Vehicle(Agent):
         """
         Checks which action to take for a vehicle.
         """
-        if self.state['arrived']:
+        if self.state['done']:
             pass
         elif self.state['charging']:
             pass
@@ -171,7 +173,7 @@ class Vehicle(Agent):
         """
         Removes the vehicle from its charger if it finished charging in the previous step.
         """
-        if self.state['charging'] and self.state['arrived']:
+        if self.state['charging'] and self.state['done']:
             self.state['charging'] = False
             self.charger.remove_vehicle(self.power)
             self.charger = None
@@ -205,7 +207,7 @@ class External(Vehicle):
             self.charge_steps = self.get_charge_steps(mean=35, std=2)
         else:
             self.target_soc = 100
-            self.charge_steps = self.get_charge_steps(mean=470, std=2)
+            self.charge_steps = self.get_charge_steps(mean=660, std=2)
 
         # target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
         target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
@@ -227,9 +229,10 @@ class External(Vehicle):
                 self.state['waiting'] = True
             self.charge_steps -= 1
             self.wait_time += self.resolution
-            if self.wait_time == 20:
+            if self.break_type == 'ShortBreak' and self.wait_time == 20 or \
+               self.break_type == 'LongBreak' and self.wait_time == 180:
                 self.state['waiting'] = False
-                self.state['arrived'] = True
+                self.state['done'] = True
                 self.no_charge = True
             return
         # Find the charger for which the accessible power is closest to the target power of the vehicle.
