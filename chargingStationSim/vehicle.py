@@ -63,7 +63,7 @@ class Vehicle(Agent):
         # The charger the vehicle is using. None if not charging.
         self.charger = None
         # Current state of the vehicle.
-        self.state = dict(charging=False, done=False, waiting=False)
+        self.state = dict(charging=False, waiting=False, done=False, left=False)
         # If the vehicle ever got to charge in the simulation.
         self.no_charge = False
 
@@ -139,10 +139,7 @@ class Vehicle(Agent):
         # All charger that are available and the power they can deliver.
         available = [(charger, charger.accessible_power) for charger in self.station.charge_list if charger.available]
         if not available:
-            if not self.state['waiting']:
-                self.state['waiting'] = True
-            self.charge_steps -= 1
-            self.wait_time += self.resolution
+            self.check_waiting()
             return
         # Find the charger for which the accessible power is closest to the target power of the vehicle.
         charger = available[min(range(len(available)), key=lambda num: abs(available[num][1] - self.target_power))]
@@ -157,15 +154,13 @@ class Vehicle(Agent):
         """
         Checks which action to take for a vehicle.
         """
-        if self.state['done']:
+        if self.state['left']:
             pass
         elif self.state['charging']:
             pass
-        elif self.state['waiting']:
+        elif self.state['waiting'] or self.arrival == self.station.step_time:
             self.find_charger()
             # elif self.arrival == self.station.step_time.time():
-        elif self.arrival == self.station.step_time:
-            self.find_charger()
         else:
             pass
 
@@ -173,7 +168,7 @@ class Vehicle(Agent):
         """
         Removes the vehicle from its charger if it finished charging in the previous step.
         """
-        if self.state['charging'] and self.state['done']:
+        if self.state['done']:
             self.state['charging'] = False
             self.charger.remove_vehicle(self.power)
             self.charger = None
@@ -218,31 +213,16 @@ class External(Vehicle):
         else:
             self.target_power = target_power
 
-    def find_charger(self):
-        """
-        Finds charger that can deliver the requested power. If nothing is available the vehicle waits until next step.
-        """
-        # All charger that are available and the power they can deliver.
-        available = [(charger, charger.accessible_power) for charger in self.station.charge_list if charger.available]
-        if not available:
-            if not self.state['waiting']:
-                self.state['waiting'] = True
-            self.charge_steps -= 1
-            self.wait_time += self.resolution
-            if self.break_type == 'ShortBreak' and self.wait_time == 20 or \
-               self.break_type == 'LongBreak' and self.wait_time == 180:
-                self.state['waiting'] = False
-                self.state['done'] = True
-                self.no_charge = True
-            return
-        # Find the charger for which the accessible power is closest to the target power of the vehicle.
-        charger = available[min(range(len(available)), key=lambda num: abs(available[num][1] - self.target_power))]
-        # If what's available is less or equal to the requested power we take all the available power:
-        if charger[1] <= self.target_power:
-            self.connect_charger(charger[0], charger[1])
-        # If the requested power is less than what's available we only take what was requested:
-        else:
-            self.connect_charger(charger[0], self.target_power)
+    def check_waiting(self):
+        if not self.state['waiting']:
+            self.state['waiting'] = True
+        self.charge_steps -= 1
+        self.wait_time += self.resolution
+        if self.break_type == 'ShortBreak' and self.wait_time == 20 or \
+           self.break_type == 'LongBreak' and self.wait_time == 180:
+            self.state['waiting'] = False
+            self.state['left'] = True
+            self.no_charge = True
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -277,3 +257,13 @@ class Internal(Vehicle):
             self.target_power = self.max_charge
         else:
             self.target_power = target_power
+
+    def check_waiting(self):
+        if not self.state['waiting']:
+            self.state['waiting'] = True
+        self.charge_steps -= 1
+        self.wait_time += self.resolution
+        if self.charge_steps == 0:
+            self.state['waiting'] = False
+            self.state['left'] = True
+            self.no_charge = True
