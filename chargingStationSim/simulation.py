@@ -19,24 +19,24 @@ start = time.time()
 # Location to save the results from the simulation.
 save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
 # Time resolution for each time step in the simulation in minutes.
-time_resolution = 5
+time_resolution = 2
 # For how many iterations the simulation should be repeated.
 num_iter = 100
 # If there should be a stationary battery at the station.
 flexibility = False
 # ID number of the run with the specific parameter combination. Should start at 0.
-run_id = 5
+run_id = 0
 
 # Set model parameters for a simulation.
-model_params = {'num_external': 32, 'num_internal': 67, 'chargers': {350: 12, 500: 3},
-                'battery': flexibility, 'station_limit': 2000, 'time_resolution': time_resolution}
+model_params = {'num_external': 32, 'num_internal': 68, 'chargers': {350: 5, 500: 0},
+                'battery': flexibility, 'station_limit': 1550, 'time_resolution': time_resolution}
 
 # Parameters for each vehicle group containing arrays to randomly select params from.
-vehicle_params = {'External': {'capacity': (500, 600, 700, 800, 900), 'max_charge': (350, 450, 500)},
-                  'Internal': {'capacity': (500, 600, 700, 800, 900), 'max_charge': (350, 450, 500)}}
+vehicle_params = {'External': {'capacity': (500, 600, 700, 800, 900), 'max_charge': (300, 350, 400, 450, 500)},
+                  'Internal': {'capacity': (500, 600, 700, 800, 900), 'max_charge': (300, 350, 400, 450, 500)}}
 
 # Parameters for a stationary battery for flexibility.
-battery_params = {'capacity': 1000, 'max_charge': 1000, 'soc': 90}
+battery_params = {'capacity': 1000, 'max_charge': 500, 'soc': 90}
 
 # Probability distribution for the arrival of vehicles at the station for a given hour in the day.
 arrival_dist = {'Internal': [0.0000, 0.2500, 0.0000, 0.0000, 0.0000, 0.0000, 0.0952, 0.0000, 0.0000, 0.0476, 0.0000,
@@ -58,7 +58,7 @@ short_break = {'Internal': [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
 # Probability distribution for a vehicles to have a medium long break at the station for a given hour in the day.
 medium_break = {'Internal': [0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.15,
                              1.00, 0.80, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00],
-                'External': [0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
+                'External': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
 
 # Probability distribution for a vehicles to have a long break at the station for a given hour in the day.
 long_break = {'Internal': [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.33,
