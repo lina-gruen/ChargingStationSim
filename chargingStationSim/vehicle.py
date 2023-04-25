@@ -173,6 +173,8 @@ class Vehicle(Agent):
             self.charger.remove_vehicle(self.power)
             self.charger = None
             self.power = 0
+            self.state['done'] = False
+            self.state['left'] = True
 
     def step_2(self):
         """
@@ -199,10 +201,10 @@ class External(Vehicle):
         if self.break_type == 'ShortBreak':
             self.target_soc = 80
             # maximum steps that the vehicle has time to charge.
-            self.charge_steps = self.get_charge_steps(mean=35, std=2)
+            self.charge_steps = self.get_charge_steps(mean=35, std=1)
         else:
             self.target_soc = 100
-            self.charge_steps = self.get_charge_steps(mean=660, std=2)
+            self.charge_steps = self.get_charge_steps(mean=660, std=6)
 
         # target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
         target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
@@ -241,13 +243,13 @@ class Internal(Vehicle):
         if self.break_type == 'ShortBreak':
             self.target_soc = 80
             # maximum steps that the vehicle has time to charge.
-            self.charge_steps = self.get_charge_steps(mean=120, std=2)
+            self.charge_steps = self.get_charge_steps(mean=120, std=3)
         elif self.break_type == 'MediumBreak':
             self.target_soc = 100
-            self.charge_steps = self.get_charge_steps(mean=270, std=2)
+            self.charge_steps = self.get_charge_steps(mean=270, std=3)
         else:
             self.target_soc = 100
-            self.charge_steps = self.get_charge_steps(mean=630, std=2)
+            self.charge_steps = self.get_charge_steps(mean=630, std=3)
 
         # target_power = ((self.target_soc * (self.capacity / 100)) - self.soc) / (self.resolution / 60)
         target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
