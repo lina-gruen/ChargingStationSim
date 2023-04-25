@@ -134,12 +134,11 @@ class Station(Model):
                 hour = pd.Timestamp(arrival_time).hour
                 break_type = rand_generator.choice(['ShortBreak', 'MediumBreak', 'LongBreak'],
                                                    p=self.break_dist[vehicle_type][hour])
-                cap = rand_generator.choice(self.vehicle_params[vehicle_type]['capacity'])
-                charge = rand_generator.choice(self.vehicle_params[vehicle_type]['max_charge'])
-                if vehicle_type is 'External':
-                    soc = rand_generator.normal(loc=50, scale=6)
-                else:
-                    soc = rand_generator.uniform(low=20, high=70)
+                cap = rand_generator.choice(self.vehicle_params[vehicle_type]['capacity'],
+                                            p=[0.15, 0.22, 0.29, 0.22, 0.12])
+                charge = rand_generator.choice(self.vehicle_params[vehicle_type]['max_charge'],
+                                               p=[0.14, 0.18, 0.21, 0.26, 0.21])
+                soc = rand_generator.normal(loc=50, scale=6)
                 obj = eval(vehicle_type)(unique_id=counter + num,
                                          station=self,
                                          random=rand_generator,
