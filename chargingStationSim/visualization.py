@@ -126,6 +126,15 @@ def station_plot(data, flexibility, iterations, path, runs):
         type_mean['Interne'] = type_data_mean.xs('Internal', level='Type')
         type_mean['Eksterne'] = type_data_mean.xs('External', level='Type')
 
+        # Plot mean type plot for each run separately.
+        for run_nr in range(runs):
+            plt.figure()
+            type_mean.xs(run_nr, level='RunId').plot.area(stacked=False, alpha=.8)
+            plt.xlabel('Tid')
+            plt.ylabel('Effekt [kW]')
+            fig = plt.gcf()
+            fig.savefig(f'{path}/load_type_plot_{run_nr + 1}.pdf')
+
         fig, axs = make_subplots(share_x=True, share_y=False)
         for run_nr, ax in enumerate(axs.flat):
             try:
@@ -146,11 +155,20 @@ def station_plot(data, flexibility, iterations, path, runs):
                                   data['BreakType']])['power'].sum()
         break_data_mean = break_data.groupby(['RunId', 'Time', 'Type', 'BreakType']).mean()
         break_mean = pd.DataFrame()
-        break_mean['Int.: kort ladeøkt'] = break_data_mean.xs(('Internal', 'ShortBreak'), level=['Type', 'BreakType'])
-        break_mean['Int.: middels ladeøkt'] = break_data_mean.xs(('Internal', 'MediumBreak'), level=['Type', 'BreakType'])
-        break_mean['Int.: lang ladeøkt'] = break_data_mean.xs(('Internal', 'LongBreak'), level=['Type', 'BreakType'])
-        break_mean['Eks.: kort ladeøkt'] = break_data_mean.xs(('External', 'ShortBreak'), level=['Type', 'BreakType'])
-        break_mean['Eks.: lang ladeøkt'] = break_data_mean.xs(('External', 'LongBreak'), level=['Type', 'BreakType'])
+        break_mean['I1'] = break_data_mean.xs(('Internal', 'ShortBreak'), level=['Type', 'BreakType'])
+        break_mean['I2'] = break_data_mean.xs(('Internal', 'MediumBreak'), level=['Type', 'BreakType'])
+        break_mean['I3'] = break_data_mean.xs(('Internal', 'LongBreak'), level=['Type', 'BreakType'])
+        break_mean['E1'] = break_data_mean.xs(('External', 'ShortBreak'), level=['Type', 'BreakType'])
+        break_mean['E2'] = break_data_mean.xs(('External', 'LongBreak'), level=['Type', 'BreakType'])
+
+        # Plot mean type plot for each run separately.
+        for run_nr in range(runs):
+            plt.figure()
+            break_mean.xs(run_nr, level='RunId').plot()
+            plt.xlabel('Tid')
+            plt.ylabel('Effekt [kW]')
+            fig = plt.gcf()
+            fig.savefig(f'{path}/load_rest_plot_{run_nr + 1}.pdf')
 
         fig, axs = make_subplots(share_x=True, share_y=False)
         for run_nr, ax in enumerate(axs.flat):
@@ -214,10 +232,10 @@ def station_plot(data, flexibility, iterations, path, runs):
 
         if flexibility:
             fig.savefig(f'{path}/mean_load_plot_{run_nr+1}_flex.pdf')
-            plt.show()
+            #plt.show()
         else:
             fig.savefig(f'{path}/mean_load_plot_{run_nr+1}.pdf')
-            plt.show()
+            #plt.show()
 
     # Plot mean power for all runs in one figure.
     fig, axs = make_subplots(share_x=True, share_y=False)
@@ -403,11 +421,12 @@ def vehicle_plot(data, steps, iters, runs, path):
     charged = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Charged'].sum()
     charged_mean = charged.groupby(['RunId', 'Step', 'Type']).mean()
     charged_mean = round(charged_mean.xs((steps, 'External'), level=['Step', 'Type']), 0)
-    plt.figure()
+    fig = plt.figure()
     charged_mean.plot(kind='bar')
     plt.xlabel('Time [min]')
     plt.ylabel('Antall kjøretøy')
     plt.title('Antall externe som ikke ladet')
+    fig.savefig(f'{path}/left_plot.pdf')
     plt.show()
 
     # Distribution of waiting times for all scenarios.
@@ -437,9 +456,9 @@ def vehicle_plot(data, steps, iters, runs, path):
 
 
 if __name__ == '__main__':
-    time_resolution = 5
+    time_resolution = 2
     num_iter = 100
-    runs = 3
+    runs = 1
     flexibility = False
     plot_battery = False
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
@@ -448,7 +467,7 @@ if __name__ == '__main__':
     set_plotstyle()
     data = get_data(save_path, runs, flexibility)
     # Run functions for visualization of the simulation results.
-    # station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
+    station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
     vehicle_plot(data, steps=num_steps, iters=num_iter, runs=runs, path=save_path)
     if plot_battery and flexibility:
         without_flex = get_data(save_path, runs, False)
