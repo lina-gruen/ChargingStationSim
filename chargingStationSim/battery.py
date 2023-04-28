@@ -41,9 +41,9 @@ class Battery(Agent):
         #
         self.wait_time = 0
         # Upper limit for the soc of the battery.
-        self.upper_soc_limit = 90
+        self.upper_soc_limit = 100
         # Lower limit for the soc of the battery.
-        self.lower_soc_limit = 10
+        self.lower_soc_limit = 0
         # How much power the battery is currently using to recharge/discharge.
         self.power = 0
         # Check if the battery is drained or fully charged at initialization.
@@ -60,6 +60,7 @@ class Battery(Agent):
 
         self.arrival = None
         self.break_type = None
+        self.no_charge = False
 
     def recharge(self):
         """
