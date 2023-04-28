@@ -105,7 +105,6 @@ def plot_max(df, ax, col_name, color):
 
 
 def station_plot(data, flexibility, iterations, path, runs):
-
     # Development of the station power.
     """
     multi_run = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Power'].mean()
@@ -118,6 +117,7 @@ def station_plot(data, flexibility, iterations, path, runs):
     """
 
     # ----------------------------------------------------------------------------------------------------------------------
+
     if not flexibility:
         # Development of station power by vehicle type.
         type_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['Type']])['power'].sum()
@@ -197,10 +197,20 @@ def station_plot(data, flexibility, iterations, path, runs):
     # Mean power and standard deviation for all runs.
     mean_data = pd.DataFrame()
     sum_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time])['power'].sum()
-    sum_mean = sum_data.groupby(['RunId', 'Time']).mean()
-    sum_std = sum_data.groupby(['RunId', 'Time']).std()
-    mean_data['mean'] = sum_mean
-    mean_data['std'] = sum_std
+    mean = sum_data.groupby(['RunId', 'Time']).mean()
+    std = sum_data.groupby(['RunId', 'Time']).std()
+    median = sum_data.groupby(['RunId', 'Time']).median()
+    iqr_25 = sum_data.groupby(['RunId', 'Time']).quantile(q=0.25)
+    iqr_75 = sum_data.groupby(['RunId', 'Time']).quantile(q=0.75)
+    mini = sum_data.groupby(['RunId', 'Time']).min()
+    maxi = sum_data.groupby(['RunId', 'Time']).max()
+    mean_data['mean'] = mean
+    mean_data['std'] = std
+    mean_data['median'] = median
+    mean_data['iqr25'] = iqr_25
+    mean_data['iqr75'] = iqr_75
+    mean_data['min'] = mini
+    mean_data['max'] = maxi
     # mean_data['max'] = mean_data['mean'].max()
 
     """
@@ -231,11 +241,32 @@ def station_plot(data, flexibility, iterations, path, runs):
         plt.ylabel('Effekt [kW]')
 
         if flexibility:
-            fig.savefig(f'{path}/mean_load_plot_{run_nr+1}_flex.pdf')
-            #plt.show()
+            fig.savefig(f'{path}/mean_load_plot_{run_nr + 1}_flex.pdf')
+            # plt.show()
         else:
-            fig.savefig(f'{path}/mean_load_plot_{run_nr+1}.pdf')
-            #plt.show()
+            fig.savefig(f'{path}/mean_load_plot_{run_nr + 1}.pdf')
+            # plt.show()
+    '''
+    # Plot median power for each run separately.
+    for run_nr in range(runs):
+        run_data = mean_data.xs(run_nr, level='RunId')
+        fig = plt.figure()
+        run_data['median'].plot()
+        plot_max(run_data, None, 'median', '#3F5D7D')
+        plt.fill_between(run_data.index, run_data['iqr25'],
+                         run_data['iqr75'], alpha=.3)
+        run_data['min'].plot(color='#3388BB')
+        run_data['max'].plot(color='#3388BB')
+        plt.xlabel('Tid')
+        plt.ylabel('Effekt [kW]')
+
+        if flexibility:
+            fig.savefig(f'{path}/median_load_plot_{run_nr + 1}_flex.pdf')
+            # plt.show()
+        else:
+            fig.savefig(f'{path}/median_load_plot_{run_nr + 1}.pdf')
+            # plt.show()
+    '''
 
     # Plot mean power for all runs in one figure.
     fig, axs = make_subplots(share_x=True, share_y=False)
@@ -313,7 +344,7 @@ def battery_plot(data, flex_data, path, runs):
         ax3.set(xlabel='Tid')
         ax2.set_title('Stasjonært batteri', fontweight='bold')
 
-        fig.savefig(f'{path}/flex_load_plot_{run_nr+1}.pdf')
+        fig.savefig(f'{path}/flex_load_plot_{run_nr + 1}.pdf')
         plt.show()
 
 
@@ -420,25 +451,45 @@ def vehicle_plot(data, steps, iters, runs, path):
     # Distribution of how many external leave the station before charging.
     charged = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Charged'].sum()
     charged_mean = charged.groupby(['RunId', 'Step', 'Type']).mean()
-    charged_mean = round(charged_mean.xs((steps, 'External'), level=['Step', 'Type']), 0)
+    charged_1 = round(charged_mean.xs((0, steps, 'External'), level=['RunId', 'Step', 'Type']), 0)
+    charged_2 = round(charged_mean.xs((1, steps, 'External'), level=['RunId', 'Step', 'Type']), 0)
+    #charged_internal = round(charged_mean.xs((steps, 'Internal'), level=['Step', 'Type']), 0)
     fig = plt.figure()
-    charged_mean.plot(kind='bar')
-    plt.xlabel('Time [min]')
-    plt.ylabel('Antall kjøretøy')
-    plt.title('Antall externe som ikke ladet')
+    charged_1.plot(kind='bar', label='Eksterne', color='orange')
+    charged_2.plot(kind='bar', label='Eksterne', color='orange')
+    #charged_internal.plot(kind='bar', label='Interne', color='orange')
+    plt.xticks(rotation=90)
+    plt.ylabel('Antall elektriske lastebiler')
+    plt.xlabel('Scenario nr.')
+    plt.legend(loc='upper right')
     fig.savefig(f'{path}/left_plot.pdf')
     plt.show()
 
-    # Distribution of waiting times for all scenarios.
+    # fig, axs = make_subplots(share_x=False, share_y=False)
+    # for run_nr, ax in enumerate(axs.flat):
+    #     try:
+    #         charged = pd.DataFrame()
+    #         charged[f'Interne'] = round(charged_mean.xs((run_nr, steps, 'External'), level=['RunId', 'Step', 'Type']), 0)
+    #         charged[f'Eksterne'] = round(charged_mean.xs((run_nr, steps, 'Internal'), level=['RunId', 'Step', 'Type']), 0)
+    #         charged.plot(ax=ax, kind='bar')
+    #         ax.set_ylabel('Antall elektriske lastebiler')
+    #         ax.set_title(f'Scenario {run_nr + 1})', fontweight="bold")
+    #     except KeyError:
+    #         ax.grid(False)
+    #         plt.show()
+    # fig.savefig(f'{path}/left_plot.pdf')
+    # plt.show()
 
+
+    # Distribution of waiting times for all scenarios.
     wait_mean = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Waiting'].mean()
     wait_mean = wait_mean.xs(steps, level='Step')
     fig, axs = make_subplots(share_x=False, share_y=False)
     for run_nr, ax in enumerate(axs.flat):
         try:
             wait = pd.DataFrame()
-            wait[f'Scenario {run_nr + 1}\ninterne'] = wait_mean.xs((run_nr, 'Internal'), level=['RunId', 'Type'])
-            wait[f'Scenario {run_nr + 1}\neksterne'] = wait_mean.xs((run_nr, 'External'), level=['RunId', 'Type'])
+            wait['Interne'] = wait_mean.xs((run_nr, 'Internal'), level=['RunId', 'Type'])
+            wait['Eksterne'] = wait_mean.xs((run_nr, 'External'), level=['RunId', 'Type'])
             wait.plot.box(ax=ax)
             ax.set_ylabel('Tid [min]')
             ax.set_title(f'Scenario {run_nr + 1})', fontweight="bold")
@@ -458,7 +509,7 @@ def vehicle_plot(data, steps, iters, runs, path):
 if __name__ == '__main__':
     time_resolution = 2
     num_iter = 100
-    runs = 1
+    runs = 6
     flexibility = False
     plot_battery = False
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
