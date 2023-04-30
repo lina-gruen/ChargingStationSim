@@ -18,18 +18,19 @@ start = time.time()
 
 # Location to save the results from the simulation.
 save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
+# Seed for the random generator.
+seed = 1256
 # Time resolution for each time step in the simulation in minutes.
 time_resolution = 2
 # For how many iterations the simulation should be repeated.
 num_iter = 100
 # If there should be a stationary battery at the station.
-flexibility = False
+flexibility = True
 # ID number of the run with the specific parameter combination. Should start at 0.
-run_id = 0
-
+run_id = 1
 # Set model parameters for a simulation.
-model_params = {'num_external': 32, 'num_internal': 68, 'chargers': {350: 5, 500: 0},
-                'battery': flexibility, 'station_limit': 1550, 'time_resolution': time_resolution}
+model_params = {'num_external': 32, 'num_internal': 68, 'chargers': {350: 3, 500: 2},
+                'battery': flexibility, 'station_limit': 1000, 'time_resolution': time_resolution}
 
 # Parameters for each vehicle group containing arrays to randomly select params from.
 vehicle_params = {'External': {'capacity': (500, 600, 700, 800, 900), 'max_charge': (300, 350, 400, 450, 500)},
@@ -69,6 +70,8 @@ long_break = {'Internal': [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
 # alternative internal: [0.87, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 0.42, 0.30, 0.00, 0.00, 0.00, 0.48,
 #  0.56, 0.83, 0.83, 0.76, 0.68, 0.96, 0.87, 0.87, 0.87]
 
+# Set the seed for the random generator of the simulation.
+Station.set_seed(seed=seed)
 # Set the parameters for the simulation globally for the Station class.
 Station.set_params(vehicle=vehicle_params, battery=battery_params, flexibility=flexibility)
 Station.set_arrival_dist(arrival=arrival_dist, resolution=time_resolution)
