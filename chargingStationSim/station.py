@@ -15,14 +15,12 @@ import pandas as pd
 import numpy as np
 from numpy.random import default_rng
 
-# Seed for randomization.
-rand_generator = default_rng(seed=1256)
-
 
 class Station(Model):
     """
     Class for a charging station.
     """
+    rand_generator = default_rng(seed=1256)
 
     # Parameters for each vehicle group containing arrays to randomly select params from.
     vehicle_params = None
@@ -40,6 +38,13 @@ class Station(Model):
     # Will contain the probability of a vehicle having either a short or a long breaks for a given hour in the day.
     break_dist = {'Internal': None,
                   'External': None}
+
+    @classmethod
+    def set_seed(cls, seed):
+        """
+        Sets seed for randomization.
+        """
+        cls.rand_generator = default_rng(seed=seed)
 
     @classmethod
     def set_params(cls, vehicle, battery, flexibility):
@@ -130,18 +135,18 @@ class Station(Model):
         counter = 0
         for vehicle_type, vehicle_num in num_vehicles.items():
             for num in range(vehicle_num):
-                arrival_time = rand_generator.choice(self.timestamps, p=self.arrival_dist[vehicle_type])
+                arrival_time = self.rand_generator.choice(self.timestamps, p=self.arrival_dist[vehicle_type])
                 hour = pd.Timestamp(arrival_time).hour
-                break_type = rand_generator.choice(['ShortBreak', 'MediumBreak', 'LongBreak'],
-                                                   p=self.break_dist[vehicle_type][hour])
-                cap = rand_generator.choice(self.vehicle_params[vehicle_type]['capacity'],
-                                            p=[0.15, 0.22, 0.29, 0.22, 0.12])
-                charge = rand_generator.choice(self.vehicle_params[vehicle_type]['max_charge'],
-                                               p=[0.14, 0.18, 0.21, 0.26, 0.21])
-                soc = rand_generator.normal(loc=50, scale=6)
+                break_type = self.rand_generator.choice(['ShortBreak', 'MediumBreak', 'LongBreak'],
+                                                        p=self.break_dist[vehicle_type][hour])
+                cap = self.rand_generator.choice(self.vehicle_params[vehicle_type]['capacity'],
+                                                 p=[0.15, 0.22, 0.29, 0.22, 0.12])
+                charge = self.rand_generator.choice(self.vehicle_params[vehicle_type]['max_charge'],
+                                                    p=[0.14, 0.18, 0.21, 0.26, 0.21])
+                soc = self.rand_generator.normal(loc=50, scale=6)
                 obj = eval(vehicle_type)(unique_id=counter + num,
                                          station=self,
-                                         random=rand_generator,
+                                         random=self.rand_generator,
                                          capacity=cap,
                                          max_charge=charge,
                                          arrival=arrival_time,
