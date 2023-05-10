@@ -220,8 +220,8 @@ class External(Vehicle):
             self.state['waiting'] = True
         self.charge_steps -= 1
         self.wait_time += self.resolution
-        if self.break_type == 'ShortBreak' and self.wait_time == 20 or \
-           self.break_type == 'LongBreak' and self.wait_time == 180:
+        if self.break_type == 'ShortBreak' and self.wait_time >= 15 or \
+           self.break_type == 'LongBreak' and self.wait_time >= 180:
             self.state['waiting'] = False
             self.state['left'] = True
             self.no_charge = True
