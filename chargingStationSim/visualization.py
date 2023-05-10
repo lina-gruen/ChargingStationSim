@@ -27,13 +27,15 @@ def set_plotstyle():
     lightred = '#d46c4d'
     red = '#EE6666'
     purple = '#9988DD'
+    grape = '#5f2373'
     lightgreen = '#88BB44'
     pink = '#FFBBBB'
     yellow = '#EECC55'
     extra_darkgrey = '#E6E6E6'
     darkgrey = '#444444'
     lightgrey = (0.92, 0.92, 0.92)
-    colors = cycler('color', [darkblue, red, lightblue, purple, yellow, lightgreen, pink])
+    colors = cycler('color', [lightred, lightaqua, golden, darkblue, grape, lightgreen, pink])
+    # [darkblue, red, lightblue, purple, yellow, lightgreen, pink]
     # plt.rc('figure', facecolor=extra_darkgrey, edgecolor='none'),
     # plt.rc('axes', facecolor=extra_darkgrey, edgecolor='none',
     #        axisbelow=True, grid=True, prop_cycle=colors)
@@ -42,10 +44,11 @@ def set_plotstyle():
     # plt.rc('ytick', direction='out', color='dimgray')
     # plt.rc('patch', edgecolor=extra_darkgrey)
     # plt.rc('lines', linewidth=2)
-    plt.rc('axes', axisbelow=True, grid=True, edgecolor=darkgrey, labelcolor=darkgrey, prop_cycle=colors)
+    plt.rc('font', size=14)
+    plt.rc('axes', labelsize=14, axisbelow=True, grid=True, edgecolor=darkgrey, labelcolor=darkgrey, prop_cycle=colors)
     plt.rc('grid', color=lightgrey, linestyle='solid', linewidth=1)
-    plt.rc('xtick', direction='out', color=darkgrey)
-    plt.rc('ytick', direction='out', color=darkgrey)
+    plt.rc('xtick', labelsize=13, direction='out', color=darkgrey)
+    plt.rc('ytick', labelsize=13, direction='out', color=darkgrey)
     plt.rc('text', color=darkgrey)
     plt.rc('patch', edgecolor='#E6E6E6')
     plt.rc('lines', linewidth=2)
@@ -54,10 +57,10 @@ def set_plotstyle():
 def get_data(path, runs, flex):
     results = []
     if flex:
-        for run_id in range(runs):
+        for run_id in runs:
             results.append(pd.read_csv(path + f'/simulation_{run_id}_flex.csv'))
     else:
-        for run_id in range(runs):
+        for run_id in runs:
             results.append(pd.read_csv(path + f'/simulation_{run_id}.csv'))
     data = pd.concat(results)
     data['Time'] = pd.to_datetime(data['Time'])
@@ -66,8 +69,8 @@ def get_data(path, runs, flex):
 
 
 def make_subplots(share_x, share_y):
-    if runs > 2:
-        figure, axis = plt.subplots(nrows=math.ceil(runs / 2), ncols=2, layout='tight',
+    if len(runs) > 2:
+        figure, axis = plt.subplots(nrows=math.ceil(len(runs) / 2), ncols=2, layout='tight',
                                     sharex=share_x, sharey=share_y)
         figure.set_figwidth(10)
         figure.set_figheight(8)
@@ -133,7 +136,7 @@ def station_plot(data, flexibility, iterations, path, runs):
         type_mean['Eksterne'] = type_data_mean.xs('External', level='Type')
 
         # Plot mean type plot for each run separately.
-        for run_nr in range(runs):
+        for run_nr in runs:
             plt.figure()
             type_mean.xs(run_nr, level='RunId').plot.area(stacked=False, alpha=.8)
             plt.ylim(top=2000)
@@ -146,7 +149,7 @@ def station_plot(data, flexibility, iterations, path, runs):
 
         '''
         fig, axs = make_subplots(share_x=True, share_y=False)
-        for run_nr, ax in enumerate(axs.flat):
+        for run_nr, ax in zip(runs, axs.flat):
             try:
                 # type_mean.xs(run_nr, level='RunId').plot(ax=ax)
                 type_mean.xs(run_nr, level='RunId').plot.area(ax=ax, stacked=False, alpha=.8)
@@ -172,7 +175,7 @@ def station_plot(data, flexibility, iterations, path, runs):
         break_mean['E2'] = break_data_mean.xs(('External', 'LongBreak'), level=['Type', 'BreakType'])
 
         # Plot mean type plot for each run separately.
-        for run_nr in range(runs):
+        for run_nr in runs:
             plt.figure()
             break_mean.xs(run_nr, level='RunId').plot()
             plt.ylim(top=1400)
@@ -185,7 +188,7 @@ def station_plot(data, flexibility, iterations, path, runs):
 
         '''
         fig, axs = make_subplots(share_x=True, share_y=False)
-        for run_nr, ax in enumerate(axs.flat):
+        for run_nr, ax in zip(runs, axs.flat):
             try:
                 break_mean.xs(run_nr, level='RunId').plot(ax=ax)
                 # break_mean.xs(run_nr, level='RunId').plot.area(ax=ax, stacked=False, alpha=.8)
@@ -232,15 +235,17 @@ def station_plot(data, flexibility, iterations, path, runs):
     # ----------------------------------------------------------------------------------------------------------------------
 
     # Plot mean power for each run separately.
-    for run_nr in range(runs):
+    for run_nr in runs:
         run_data = mean_data.xs(run_nr, level='RunId')
+        mean_power = run_data['mean'].mean()
+        print(f'Scenario:{run_nr+1}, Mean:{mean_power}')
         fig = plt.figure()
-        run_data['mean'].plot()
+        run_data['mean'].plot(color='#3F5D7D')
         plot_max(run_data, None, 'mean', True, '#3F5D7D')
         over_line = (run_data['mean'] - run_data['std'])
         under_line = (run_data['mean'] + run_data['std'])
         plt.fill_between(run_data.index, under_line,
-                         over_line, alpha=.3)
+                         over_line, alpha=.3, color='#3F5D7D')
         plt.ylim(top=2600)
         plt.xlabel('Tid')
         plt.ylabel('Effekt [kW]')
@@ -257,7 +262,7 @@ def station_plot(data, flexibility, iterations, path, runs):
 
     '''
     # Plot median power for each run separately.
-    for run_nr in range(runs):
+    for run_nr in runs:
         run_data = mean_data.xs(run_nr, level='RunId')
         fig = plt.figure()
         run_data['median'].plot()
@@ -279,7 +284,7 @@ def station_plot(data, flexibility, iterations, path, runs):
     '''
     # Plot mean power for all runs in one figure.
     fig, axs = make_subplots(share_x=True, share_y=False)
-    for run_nr, ax in enumerate(axs.flat):
+    for run_nr, ax in zip(runs, axs.flat):
         try:
             run_data = mean_data.xs(run_nr, level='RunId')
             run_data['mean'].plot(ax=ax)
@@ -463,6 +468,7 @@ def vehicle_plot(data, steps, iters, runs, path):
         external.plot(kind='bar', label='Eksterne', color='#d7b734')
         internal.plot(kind='bar', label='Interne', color='#d46c4d')
         plt.grid(axis='x')
+        plt.xticks(rotation=90)
         plt.ylabel('Antall iterasjoner')
         plt.xlabel('Antall elektriske lastebiler')
         plt.legend(loc='upper right')
@@ -538,18 +544,19 @@ def vehicle_plot(data, steps, iters, runs, path):
 if __name__ == '__main__':
     time_resolution = 2
     num_iter = 100
-    runs = 6
+    runs = [0, 1, 2, 3, 4, 5]
     flexibility = False
-    plot_battery = True
+    plot_battery = False
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
+    batt_runs = {1: [42, 15], 3: [33], 5: [0, 15]}
 
     num_steps = int((24 / time_resolution) * 60) - 1
     set_plotstyle()
     data = get_data(save_path, runs, flexibility)
     # Run functions for visualization of the simulation results.
-    # station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
-    # vehicle_plot(data, steps=num_steps, iters=num_iter, runs=runs, path=save_path)
-    batt_runs = {1: [42, 15], 3: [33], 5: [0, 15]}
+    station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
+    if not flexibility:
+        vehicle_plot(data, steps=num_steps, iters=num_iter, runs=runs, path=save_path)
     if plot_battery and flexibility:
         without_flex = get_data(save_path, runs, False)
         battery_plot(without_flex, data, save_path, batt_runs)
