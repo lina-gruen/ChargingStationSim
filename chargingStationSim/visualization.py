@@ -7,6 +7,7 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 import pandas as pd
 import math
+import numpy as np
 import matplotlib.pyplot as plt
 # import matplotlib.dates as mdates
 # plt.style.use('stylename')
@@ -126,7 +127,7 @@ def station_plot(data, flexibility, iterations, path, runs):
     """
 
     # ----------------------------------------------------------------------------------------------------------------------
-
+    """
     if not flexibility:
         # Development of station power by vehicle type.
         type_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time, data['Type']])['power'].sum()
@@ -202,7 +203,7 @@ def station_plot(data, flexibility, iterations, path, runs):
         plt.show()
         '''
     # ----------------------------------------------------------------------------------------------------------------------
-
+    """
     """
     # Mean power and standard deviation for all runs.
     mean_data_2 = pd.DataFrame()
@@ -249,6 +250,10 @@ def station_plot(data, flexibility, iterations, path, runs):
         plt.ylim(top=2600)
         plt.xlabel('Tid')
         plt.ylabel('Effekt [kW]')
+        #timestamps = pd.Series(pd.date_range('20230101 00:00:00',
+        #                                     periods=24 * (60 / self.resolution),
+        #                                     freq='1T'))
+
 
         if flexibility:
             fig.tight_layout(w_pad=0.5, h_pad=1.0)
@@ -342,7 +347,7 @@ def battery_plot(data, flex_data, path, runs):
             ax1.legend()
             fig.suptitle('Ladestasjon', fontweight='bold')
             ax2.set(ylabel='Effekt [kW]')
-            ax3.set(ylabel='Soc [%]')
+            ax3.set(ylabel='SoC [%]')
             ax3.set(xlabel='Tid')
             ax2.set_title('Stasjonært batteri', fontweight='bold')
 
@@ -368,10 +373,12 @@ def vehicle_plot(data, steps, iters, runs, path):
 
     # Final soc of all vehicles.
     """
-    end_soc = data.xs(num_steps, level='Step')['Soc']
-    plt.figure()
-    end_soc.hist(bins=range(int(data.Soc.max()) + 1))
-    plt.show()
+    end_soc = data.groupby(['RunId', 'iteration', 'Step', 'AgentID'])['Soc'].mean()
+    for run in runs:
+        soc = end_soc.xs((run, steps), level=['RunId', 'Step'])
+        plt.figure()
+        soc.hist(bins=range(int(data.Soc.max()) + 1))
+        plt.show()
     """
 
     # Development of the soc for all vehicles.
@@ -461,14 +468,22 @@ def vehicle_plot(data, steps, iters, runs, path):
         counts = pd.DataFrame()
         counts['external'] = charged.xs((run_nr, 'External'), level=['RunId', 'Type'])
         counts['internal'] = charged.xs((run_nr, 'Internal'), level=['RunId', 'Type'])
+        mean_external = counts['external'].mean()
+        mean_internal = counts['internal'].mean()
+        print(f'Scenario {run_nr}: eksterne={mean_external}, interne={mean_internal}')
         external = counts.groupby(['external']).size()
         internal = counts.groupby(['internal']).size()
-        #pd.concat([df, df1], ignore_index=True, axis=1)
+        #pd.concat([df, df1], ignore_index=True, axis=1
         fig = plt.figure()
+        # fig.set_figwidth(10)
+        # width = .45
+        # plt.bar(internal.index, internal, width, label='Interne', color='#d7b734')
+        # plt.bar(external.index + width, external, width, label='Eksterne', color='#2ea28e')
         external.plot(kind='bar', label='Eksterne', color='#d7b734')
-        internal.plot(kind='bar', label='Interne', color='#d46c4d')
+        internal.plot(kind='bar', label='Interne', color='#e86e13', alpha=.6) #d46c4d
         plt.grid(axis='x')
-        plt.xticks(rotation=90)
+        # plt.xticks(internal.index + width / 2, internal.index)
+        plt.xticks(rotation=0)
         plt.ylabel('Antall iterasjoner')
         plt.xlabel('Antall elektriske lastebiler')
         plt.legend(loc='upper right')
@@ -491,7 +506,7 @@ def vehicle_plot(data, steps, iters, runs, path):
     # fig.savefig(f'{path}/left_plot.pdf')
     # plt.show()
 
-
+    """
     # Distribution of waiting times for all scenarios.
     wait_mean = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Waiting'].mean()
     wait_mean = wait_mean.xs(steps, level='Step')
@@ -531,20 +546,20 @@ def vehicle_plot(data, steps, iters, runs, path):
         for patch, color in zip(bp['boxes'], colors):
             patch.set_facecolor(color)
         for median in bp['medians']:
-            median.set(color='#d46c4d',
-                       linewidth=2)
+            median.set(color='black',
+                       linewidth=1.5)
         # plt.yticks(ticks=[1, 2], labels=['1', '2'])
         plt.ylabel('Tid [min]')
         plt.xlabel('Scenario nr.')
         fig.tight_layout(w_pad=0.5, h_pad=1.0)
         fig.savefig(f'{path}/waiting_plot_{type}.pdf')
         plt.show()
-
+    """
 
 if __name__ == '__main__':
     time_resolution = 2
     num_iter = 100
-    runs = [0, 1, 2, 3, 4, 5]
+    runs = [0]
     flexibility = False
     plot_battery = False
     save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
@@ -555,8 +570,8 @@ if __name__ == '__main__':
     data = get_data(save_path, runs, flexibility)
     # Run functions for visualization of the simulation results.
     station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs)
-    if not flexibility:
-        vehicle_plot(data, steps=num_steps, iters=num_iter, runs=runs, path=save_path)
+    # if not flexibility:
+        # vehicle_plot(data, steps=num_steps, iters=num_iter, runs=runs, path=save_path)
     if plot_battery and flexibility:
         without_flex = get_data(save_path, runs, False)
         battery_plot(without_flex, data, save_path, batt_runs)
