@@ -25,19 +25,19 @@ time_resolution = 2
 # For how many iterations the simulation should be repeated.
 num_iter = 100
 # If there should be a stationary battery at the station.
-flexibility = True
+flexibility = False
 # ID number of the run with the specific parameter combination. Should start at 0.
-run_id = 1
+run_id = 0
 # Set model parameters for a simulation.
-model_params = {'num_external': 32, 'num_internal': 68, 'chargers': {350: 3, 500: 2},
-                'battery': flexibility, 'station_limit': 1000, 'time_resolution': time_resolution}
+model_params = {'num_external': 32, 'num_internal': 68, 'chargers': {350: 5, 1000: 0},
+                'battery': flexibility, 'station_limit': 1500, 'time_resolution': time_resolution}
 
 # Parameters for each vehicle group containing arrays to randomly select params from.
 vehicle_params = {'External': {'capacity': (500, 600, 700, 800, 900), 'max_charge': (300, 350, 400, 450, 500)},
                   'Internal': {'capacity': (500, 600, 700, 800, 900), 'max_charge': (300, 350, 400, 450, 500)}}
 
 # Parameters for a stationary battery for flexibility.
-battery_params = {'capacity': 1000, 'max_charge': 500, 'soc': 90}
+battery_params = {'capacity': 1500, 'max_charge': 1000, 'soc': 90}
 
 # Probability distribution for the arrival of vehicles at the station for a given hour in the day.
 arrival_dist = {'Internal': [0.0000, 0.2500, 0.0000, 0.0000, 0.0000, 0.0000, 0.0952, 0.0000, 0.0000, 0.0476, 0.0000,
