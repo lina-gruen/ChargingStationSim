@@ -428,7 +428,7 @@ def battery_plot(data, flex_data, path, runs):
 
 def vehicle_plot(data, steps, iters, runs, path):
     """
-    Plots different variables and parameters for the electric trucks from the simulated charging station data.
+    Plots different variables and parameters for the vehicles from the simulated charging station data.
 
     Parameters
     ----------
