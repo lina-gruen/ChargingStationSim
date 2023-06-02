@@ -6,16 +6,11 @@ The file contains the Vehicle class.
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from chargingStationSim.mesa_mod import Agent
-import pandas as pd
-
-
-# Seed for randomization.
-# rand_generator = default_rng(seed=1257)
 
 
 class Vehicle(Agent):
     """
-    Base class for all vehicles in a vehicle fleet.
+    Base class for all vehicles charging at a charging station.
     """
 
     def __init__(self, unique_id, station, random, arrival, capacity, max_charge, soc):
@@ -160,7 +155,6 @@ class Vehicle(Agent):
             pass
         elif self.state['waiting'] or self.arrival == self.station.step_time:
             self.find_charger()
-            # elif self.arrival == self.station.step_time.time():
         else:
             pass
 
@@ -206,7 +200,6 @@ class External(Vehicle):
             self.target_soc = 100
             self.charge_steps = self.get_charge_steps(mean=660, std=6)
 
-        # target_power = (self.target_soc * (self.capacity / 100) - self.soc) / (self.resolution / 60)
         target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
                        (self.target_soc - self.soc)
 
@@ -251,7 +244,6 @@ class Internal(Vehicle):
             self.target_soc = 100
             self.charge_steps = self.get_charge_steps(mean=630, std=3)
 
-        # target_power = ((self.target_soc * (self.capacity / 100)) - self.soc) / (self.resolution / 60)
         target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
                        (self.target_soc - self.soc)
 
