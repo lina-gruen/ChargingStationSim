@@ -39,26 +39,31 @@ def set_plotstyle():
     darkgrey = '#444444'
     lightgrey = (0.92, 0.92, 0.92)
     colors = cycler('color', [golden, mint, orange, lightblue, grape, lightaqua, pink])
-    # [darkblue, red, lightblue, purple, yellow, lightgreen, pink]
     # plt.rc('figure', facecolor=extra_darkgrey, edgecolor='none'),
-    # plt.rc('axes', facecolor=extra_darkgrey, edgecolor='none',
-    #        axisbelow=True, grid=True, prop_cycle=colors)
-    # plt.rc('grid', color='w', linestyle='solid', linewidth=1)
-    # plt.rc('xtick', direction='out', color='dimgray')
-    # plt.rc('ytick', direction='out', color='dimgray')
-    # plt.rc('patch', edgecolor=extra_darkgrey)
-    # plt.rc('lines', linewidth=2)
     plt.rc('font', size=14)
     plt.rc('axes', labelsize=14, axisbelow=True, grid=True, edgecolor=darkgrey, labelcolor=darkgrey, prop_cycle=colors)
     plt.rc('grid', color=lightgrey, linestyle='solid', linewidth=1)
     plt.rc('xtick', labelsize=13, direction='out', color=darkgrey)
     plt.rc('ytick', labelsize=13, direction='out', color=darkgrey)
     plt.rc('text', color=darkgrey)
-    plt.rc('patch', edgecolor='#E6E6E6')
+    plt.rc('patch', edgecolor=extra_darkgrey)
     plt.rc('lines', linewidth=2)
 
 
 def get_data(path, runs, flex):
+    """
+    Imports and merges csv-files with chosen paths.
+
+    Parameters
+    ----------
+    path
+    runs
+    flex
+
+    Returns
+    -------
+    Merges dataset.
+    """
     results = []
     if flex:
         for run_id in runs:
@@ -73,6 +78,18 @@ def get_data(path, runs, flex):
 
 
 def make_subplots(share_x, share_y):
+    """
+    Makes figure with chosen number of subplots.
+
+    Parameters
+    ----------
+    share_x: bool
+    share_y: bool
+
+    Returns
+    -------
+    Instance of matplotlib figure and axis.
+    """
     if len(runs) > 2:
         figure, axis = plt.subplots(nrows=math.ceil(len(runs) / 2), ncols=2, layout='tight',
                                     sharex=share_x, sharey=share_y)
@@ -118,6 +135,19 @@ def plot_max(df, ax, col_name, number, color):
 
 
 def station_plot(data, flexibility, iterations, path, runs, resolution):
+    """
+    Plots load profiles from the simulated charging station data.
+
+    Parameters
+    ----------
+    data: pandas dataframe
+    flexibility: bool
+    iterations: int
+    path: file path
+    runs: int
+    resolution: int
+    """
+
     # Development of the station power.
     """
     multi_run = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Power'].mean()
@@ -153,6 +183,7 @@ def station_plot(data, flexibility, iterations, path, runs, resolution):
             fig.savefig(f'{path}/load_type_plot_{run_nr + 1}.pdf')
             plt.close()
 
+        # Plot all type_plots together.
         '''
         fig, axs = make_subplots(share_x=True, share_y=False)
         for run_nr, ax in zip(runs, axs.flat):
@@ -193,7 +224,8 @@ def station_plot(data, flexibility, iterations, path, runs, resolution):
             fig.savefig(f'{path}/load_rest_plot_{run_nr + 1}.pdf')
             plt.close()
 
-    '''
+        # Plot all rest_plots together.
+        '''
         fig, axs = make_subplots(share_x=True, share_y=False)
         for run_nr, ax in zip(runs, axs.flat):
             try:
@@ -207,17 +239,18 @@ def station_plot(data, flexibility, iterations, path, runs, resolution):
                 plt.show()
         fig.savefig(f'{path}/load_rest_plot_all.pdf')
         plt.show()
-    '''
+        '''
+
     # ----------------------------------------------------------------------------------------------------------------------
 
-    """
     # Mean power and standard deviation for all runs.
+    """
     mean_data_2 = pd.DataFrame()
     mean_data_2['mean'] = data.groupby(data['Time'].dt.time)['Power'].mean()
     mean_data_2['std'] = data.groupby(data['Time'].dt.time)['Power'].std()
     mean_data_2['max'] = mean_data_2['mean'].max()
     """
-    """
+
     # Mean power and standard deviation for all runs.
     mean_data = pd.DataFrame()
     sum_data = data.groupby([data['RunId'], data['iteration'], data['Time'].dt.time])['power'].sum()
@@ -225,21 +258,6 @@ def station_plot(data, flexibility, iterations, path, runs, resolution):
     std = sum_data.groupby(['RunId', 'Time']).std()
     mean_data['mean'] = mean
     mean_data['std'] = std
-    '''
-    median = sum_data.groupby(['RunId', 'Time']).median()
-    iqr_25 = sum_data.groupby(['RunId', 'Time']).quantile(q=0.25)
-    iqr_75 = sum_data.groupby(['RunId', 'Time']).quantile(q=0.75)
-    mini = sum_data.groupby(['RunId', 'Time']).min()
-    maxi = sum_data.groupby(['RunId', 'Time']).max()
-    mean_data['median'] = median
-    mean_data['iqr25'] = iqr_25
-    mean_data['iqr75'] = iqr_75
-    mean_data['min'] = mini
-    mean_data['max'] = maxi
-    # mean_data['max'] = mean_data['mean'].max()
-    '''
-
-    # ----------------------------------------------------------------------------------------------------------------------
     
     # Plot mean power for each run separately.
     for run_nr in runs:
@@ -299,30 +317,9 @@ def station_plot(data, flexibility, iterations, path, runs, resolution):
             fig.savefig(f'{path}/mean_load_plot_{run_nr + 1}.pdf')
             # plt.show()
             plt.close()
-    """
-    '''
-    # Plot median power for each run separately.
-    for run_nr in runs:
-        run_data = mean_data.xs(run_nr, level='RunId')
-        fig = plt.figure()
-        run_data['median'].plot()
-        plot_max(run_data, None, 'median', True, '#3F5D7D')
-        plt.fill_between(run_data.index, run_data['iqr25'],
-                         run_data['iqr75'], alpha=.3)
-        run_data['min'].plot(color='#3388BB')
-        run_data['max'].plot(color='#3388BB')
-        plt.xlabel('Tid')
-        plt.ylabel('Effekt [kW]')
 
-        if flexibility:
-            fig.savefig(f'{path}/median_load_plot_{run_nr + 1}_flex.pdf')
-            # plt.show()
-        else:
-            fig.savefig(f'{path}/median_load_plot_{run_nr + 1}.pdf')
-            # plt.show()
-    '''
-    '''
     # Plot mean power for all runs in one figure.
+    '''
     fig, axs = make_subplots(share_x=True, share_y=False)
     for run_nr, ax in zip(runs, axs.flat):
         try:
@@ -350,10 +347,53 @@ def station_plot(data, flexibility, iterations, path, runs, resolution):
             fig.savefig(f'{path}/mean_load_plot_all.pdf')
             plt.show
     '''
+
+    # ----------------------------------------------------------------------------------------------------------------------
+
+    # Plot median power for each run separately.
+    '''
+    mean_data['median'] = sum_data.groupby(['RunId', 'Time']).median()
+    mean_data['iqr25'] = sum_data.groupby(['RunId', 'Time']).quantile(q=0.25)
+    mean_data['iqr75'] = sum_data.groupby(['RunId', 'Time']).quantile(q=0.75)
+    mean_data['min'] = sum_data.groupby(['RunId', 'Time']).min()
+    mean_data['max'] = sum_data.groupby(['RunId', 'Time']).max()
+
+    for run_nr in runs:
+        run_data = mean_data.xs(run_nr, level='RunId')
+        fig = plt.figure()
+        run_data['median'].plot()
+        plot_max(run_data, None, 'median', True, '#3F5D7D')
+        plt.fill_between(run_data.index, run_data['iqr25'],
+                         run_data['iqr75'], alpha=.3)
+        run_data['min'].plot(color='#3388BB')
+        run_data['max'].plot(color='#3388BB')
+        plt.xlabel('Tid')
+        plt.ylabel('Effekt [kW]')
+
+        if flexibility:
+            fig.savefig(f'{path}/median_load_plot_{run_nr + 1}_flex.pdf')
+            # plt.show()
+        else:
+            fig.savefig(f'{path}/median_load_plot_{run_nr + 1}.pdf')
+            # plt.show()
+    '''
+
     # ----------------------------------------------------------------------------------------------------------------------
 
 
 def battery_plot(data, flex_data, path, runs):
+    """
+    Plots load profiles from specific iterations of the simulated charging station data with and
+    without battery flexibility.
+
+    Parameters
+    ----------
+    data: pandas dataframe
+    flex_data: pandas dataframe
+    path: file path
+    runs: int
+    """
+
     power_data = data.groupby(['RunId', 'iteration', data['Time'].dt.time])['Power'].mean()
     power_flex = flex_data.groupby(['RunId', 'iteration', flex_data['Time'].dt.time])['Power'].mean()
     # power_data_mean = power_data.groupby(['Time']).mean()
@@ -363,8 +403,6 @@ def battery_plot(data, flex_data, path, runs):
         for iter in iters:
             fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [2, 1, 1]})
             fig.set_figheight(7)
-            # mean_data['mean'].plot(ax=ax1)
-            # plot_max(mean_data, ax1, 'mean')
             # Plot power development with and without flexibility.
             power_data.xs((run_nr, iter), level=['RunId', 'iteration']).plot(ax=ax1, color='#3F5D7D',
                                                                              label='Uten batteri')
@@ -377,17 +415,11 @@ def battery_plot(data, flex_data, path, runs):
                                                                                  stacked=False)
             # Plot battery SoC development.
             batt_soc.xs((run_nr, iter, 'Battery'), level=['RunId', 'iteration', 'Type']).plot(ax=ax3, color='#f5692c')
-
-            # ax2.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
-            # ax3.spines[['top', 'bottom', 'left', 'right']].set_color('#444444')
             ax1.set(ylabel='Effekt [kW]')
             ax1.legend()
-            # fig.suptitle('Ladestasjon', fontweight='bold')
             ax2.set(ylabel='Effekt [kW]')
             ax3.set(ylabel='SoC [%]')
             ax3.set(xlabel='Tid')
-            # ax2.set_title('Stasjonært batteri', fontweight='bold')
-
             fig.tight_layout(w_pad=0, h_pad=0.5)
             fig.savefig(f'{path}/batt_plot_{run_nr + 1}_{iter}.pdf')
             plt.show()
@@ -395,6 +427,17 @@ def battery_plot(data, flex_data, path, runs):
 
 
 def vehicle_plot(data, steps, iters, runs, path):
+    """
+    Plots different variables and parameters for the electric trucks from the simulated charging station data.
+
+    Parameters
+    ----------
+    data: pandas dataframe
+    steps: int
+    iters: int
+    runs: int
+    path: file path
+    """
     # data.set_index(['iteration', 'Step'], inplace=True)
 
     # Start soc for all vehicles.
@@ -499,8 +542,6 @@ def vehicle_plot(data, steps, iters, runs, path):
     # Distribution of how many external leave the station before charging.
     charged = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Charged'].sum()
     charged = charged.xs(steps, level='Step')
-    # charged_mean = charged.groupby(['RunId', 'Type']).mean()
-    # charged_max = charged.groupby(['RunId', 'Type']).max()
     for run_nr in range(2):
         counts = pd.DataFrame()
         counts['external'] = charged.xs((run_nr, 'External'), level=['RunId', 'Type'])
@@ -510,16 +551,10 @@ def vehicle_plot(data, steps, iters, runs, path):
         print(f'Scenario {run_nr}: eksterne={mean_external}, interne={mean_internal}')
         external = counts.groupby(['external']).size()
         internal = counts.groupby(['internal']).size()
-        # pd.concat([df, df1], ignore_index=True, axis=1
         fig = plt.figure()
-        # fig.set_figwidth(10)
-        # width = .45
-        # plt.bar(internal.index, internal, width, label='Interne', color='#d7b734')
-        # plt.bar(external.index + width, external, width, label='Eksterne', color='#2ea28e')
         external.plot(kind='bar', label='Eksterne', color='#d7b734')
         internal.plot(kind='bar', label='Interne', color='#e86e13', alpha=.6)  # d46c4d
         plt.grid(axis='x')
-        # plt.xticks(internal.index + width / 2, internal.index)
         plt.xticks(rotation=0)
         plt.ylabel('Antall iterasjoner')
         plt.xlabel('Antall elektriske lastebiler')
@@ -528,49 +563,9 @@ def vehicle_plot(data, steps, iters, runs, path):
         fig.savefig(f'{path}/left_plot_{run_nr + 1}.pdf')
         plt.show()
 
-    # fig, axs = make_subplots(share_x=False, share_y=False)
-    # for run_nr, ax in enumerate(axs.flat):
-    #     try:
-    #         charged = pd.DataFrame()
-    #         charged[f'Interne'] = round(charged_mean.xs((run_nr, steps, 'External'), level=['RunId', 'Step', 'Type']), 0)
-    #         charged[f'Eksterne'] = round(charged_mean.xs((run_nr, steps, 'Internal'), level=['RunId', 'Step', 'Type']), 0)
-    #         charged.plot(ax=ax, kind='bar')
-    #         ax.set_ylabel('Antall elektriske lastebiler')
-    #         ax.set_title(f'Scenario {run_nr + 1})', fontweight="bold")
-    #     except KeyError:
-    #         ax.grid(False)
-    #         plt.show()
-    # fig.savefig(f'{path}/left_plot.pdf')
-    # plt.show()
-
     # Distribution of waiting times for all scenarios.
-    """
-    '''
-    # fig, axs = make_subplots(share_x=False, share_y=False)
-    # for run_nr, ax in enumerate(axs.flat):
-    #     try:
-    #         wait = pd.DataFrame()
-    #         wait['Interne'] = wait_mean.xs((run_nr, 'Internal'), level=['RunId', 'Type'])
-    #         wait['Eksterne'] = wait_mean.xs((run_nr, 'External'), level=['RunId', 'Type'])
-    #         wait.plot.box(ax=ax)
-    #         ax.set_ylabel('Tid [min]')
-    #         ax.set_title(f'Scenario {run_nr + 1})', fontweight="bold")
-    #     except KeyError:
-    #         ax.grid(False)
-    #         plt.show()
-
-    # fig, axs = plt.subplots()
-    # fig.set_figwidth(8)
-    # wait[f'Scenario {run_nr + 1} \n interne'] = wait_mean.xs((run_nr, 'Internal'), level=['RunId', 'Type'])
-    # wait[f'Scenario {run_nr + 1} \n eksterne'] = wait_mean.xs((run_nr, 'External'), level=['RunId', 'Type'])
-    # wait.plot.box(ax=axs)
-    # fig.tight_layout(w_pad=0.5, h_pad=1.0)
-    # fig.savefig(f'{path}/waiting_plot.pdf')
-    # plt.show()
-    '''
     wait_mean = data.groupby(['RunId', 'iteration', 'Step', 'Type'])['Waiting'].mean()
     wait_mean = wait_mean.xs(steps, level='Step')
-
     for type in ['Internal', 'External']:
         wait_1 = wait_mean.xs((0, type), level=['RunId', 'Type'])
         wait_2 = wait_mean.xs((1, type), level=['RunId', 'Type'])
@@ -586,13 +581,11 @@ def vehicle_plot(data, steps, iters, runs, path):
         for median in bp['medians']:
             median.set(color='black',
                        linewidth=1.5)
-        # plt.yticks(ticks=[1, 2], labels=['1', '2'])
         plt.ylabel('Tid [min]')
         plt.xlabel('Scenario nr.')
         fig.tight_layout(w_pad=0.5, h_pad=1.0)
         fig.savefig(f'{path}/waiting_plot_{type}.pdf')
         plt.show()
-    """
 
 
 if __name__ == '__main__':
@@ -609,6 +602,7 @@ if __name__ == '__main__':
     num_steps = int((24 / time_resolution) * 60) - 1
     set_plotstyle()
     data = get_data(save_path, runs, flexibility)
+
     # Run functions for visualization of the simulation results.
     if plot_station:
         station_plot(data, flexibility=flexibility, iterations=num_iter, path=save_path, runs=runs,
