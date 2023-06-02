@@ -126,9 +126,6 @@ class Station(Model):
         self.timestamps = pd.Series(pd.date_range('20230101 00:00:00',
                                                   periods=self.sim_time * (60 / self.resolution),
                                                   freq=f'{self.resolution}T'))
-        # self.day = pd.Series(pd.date_range('20230101 00:00:00',
-        #                                    periods=24 * (60 / self.resolution),
-        #                                    freq=f'{self.resolution}T')).dt.time
 
         # Agents--------------------------------------------------------------------------------------------------------
 
@@ -155,22 +152,8 @@ class Station(Model):
                 self.schedule.add(obj)
             counter += vehicle_num
 
-            # else:
-            #    for num in range(vehicle_num):
-            #        arrival_time = rand_generator.choice(self.timestamps, p=self.arrival_dist['external'])
-            #        hour = pd.Timestamp(arrival_time).hour
-            #        break_type = rand_generator.choice(['ShortBreak', 'LongBreak'], p=self.break_dist['external'][hour])
-            #        obj = vehicle_type(unique_id=counter + num,
-            #                           station=self,
-            #                           random=rand_generator,
-            #                           params=self.vehicle_params[vehicle_type],
-            #                           arrival=arrival_time,
-            #                           break_type=break_type)
-            #        self.schedule.add(obj)
-            #    counter += vehicle_num
-
         if battery:
-            #
+            # Add a local battery pack to the agent schedule.
             self.batt_power = 0
             obj = Battery(unique_id=counter + 1,
                           station=self,
@@ -199,7 +182,7 @@ class Station(Model):
 
         Returns
         -------
-
+        Total station power.
         """
         power_sum = [charger.max_power - charger.accessible_power for charger in self.charge_list]
         if battery:
