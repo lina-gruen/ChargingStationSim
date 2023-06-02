@@ -6,9 +6,6 @@ This file contains the simulation of charging station.
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 from chargingStationSim.station import Station
-from chargingStationSim.visualization import station_plot
-from chargingStationSim.visualization import vehicle_plot
-from chargingStationSim.visualization import set_plotstyle
 from chargingStationSim.mesa_mod.batchrunner import batch_run
 import pandas as pd
 import time
@@ -53,9 +50,6 @@ short_break = {'Internal': [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00
                'External': [0.50, 0.25, 0.25, 0.67, 0.95, 0.89, 0.88, 0.70, 0.83, 0.90, 0.84, 0.79, 0.70, 0.60, 0.55,
                             0.31, 0.21, 0.23, 0.27, 0.24, 0.27, 0.27, 0.18, 0.28]}
 
-# alternative internal: [0.13, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.58, 0.70, 0.00, 0.00, 0.00, 0.52,
-#  0.44, 0.17, 0.17, 0.24, 0.32, 0.04, 0.13, 0.13, 0.13]
-
 # Probability distribution for a vehicles to have a medium long break at the station for a given hour in the day.
 medium_break = {'Internal': [0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.15,
                              1.00, 0.80, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00],
@@ -66,9 +60,6 @@ long_break = {'Internal': [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00,
                            0.00, 0.20, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
               'External': [0.50, 0.75, 0.75, 0.33, 0.05, 0.11, 0.12, 0.30, 0.17, 0.10, 0.16, 0.21, 0.30, 0.40, 0.45,
                            0.69, 0.79, 0.77, 0.73, 0.76, 0.73, 0.73, 0.82, 0.72]}
-
-# alternative internal: [0.87, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 0.42, 0.30, 0.00, 0.00, 0.00, 0.48,
-#  0.56, 0.83, 0.83, 0.76, 0.68, 0.96, 0.87, 0.87, 0.87]
 
 # Set the seed for the random generator of the simulation.
 Station.set_seed(seed=seed)
@@ -98,14 +89,6 @@ if flexibility:
     data.to_csv(save_path + f'/simulation_{run_id}_flex.csv', index=False)
 else:
     data.to_csv(save_path + f'/simulation_{run_id}.csv', index=False)
-
-# Set custom matplotlib style.
-# set_plotstyle()
-
-# Run functions for visualization of the simulation results.
-# station_data = station_plot(results, multirun=True, flexibility=flexibility, iterations=num_runs,
-#                            path=save_path)
-# vehicle_data = vehicle_plot(results, steps=num_steps, path=save_path)
 
 # record end time
 end = time.time()
