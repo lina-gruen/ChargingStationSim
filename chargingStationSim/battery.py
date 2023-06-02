@@ -10,7 +10,7 @@ from chargingStationSim.mesa_mod import Agent
 
 class Battery(Agent):
     """
-    Class for a local battery pack.
+    Class for a local battery pack connected to a charging station.
     """
 
     def __init__(self, unique_id, station, capacity, max_charge, soc, station_limit):
@@ -38,8 +38,6 @@ class Battery(Agent):
         self.max_charge = max_charge
         # State of Charge of the vehicle battery in percentage.
         self.soc = soc
-        #
-        self.wait_time = 0
         # Upper limit for the soc of the battery.
         self.upper_soc_limit = 100
         # Lower limit for the soc of the battery.
@@ -58,9 +56,11 @@ class Battery(Agent):
         # The upper power limit at the station for when the battery starts discharging.
         self.limit = station_limit
 
+        # Variables that all agents need to have so that the data collection in the Station class works.
         self.arrival = None
         self.break_type = None
         self.no_charge = False
+        self.wait_time = 0
 
     def recharge(self):
         """
@@ -121,16 +121,6 @@ class Battery(Agent):
                 self.power = station_power - self.limit
             self.discharge()
             self.station.batt_power = self.power
-        # elif station_power < self.charge_limit and not self.full:
-        #     if (self.charge_limit - station_power) >= self.max_charge:
-        #         self.power = self.max_charge
-        #     else:
-        #         self.power = self.charge_limit - station_power
-        #     self.recharge()
-        #     self.station.batt_power = self.power
-        # else:
-        #     self.power = 0
-        #     self.station.batt_power = self.power
         elif station_power < self.limit and not self.full:
             if self.limit / 2 < station_power:
                 if (self.limit - station_power) >= self.max_charge:
