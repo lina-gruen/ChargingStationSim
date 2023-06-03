@@ -8,45 +8,37 @@ __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
 class Charger:
     """
-    Class for a charger.
+    Class for a charger connected to a charging station.
     """
 
-    def __init__(self, charger_id):
+    def __init__(self, power, num_sockets):
         """
         Parameters
         ----------
-        charger_id: int
-            Unique id for the charger.
+        power: int
+            Total power that the charger can deliver.
+        num_sockets: int
+            Number of charging sockets on the charger.
         """
-        self.id = charger_id
         self.available = True
         self.num_users = 0
-        self.num_sockets = 4
-        self.power = 350
-        self.socket_power = 0
+        self.num_sockets = num_sockets
+        self.max_power = power
+        self.accessible_power = self.max_power
 
-    def update_power(self):
-        """
-        Update and return the maximum power delivered to each charging socket in use.
-        """
-        self.socket_power = self.power / self.num_users
-
-    def add_vehicle(self):
+    def add_vehicle(self, used_power):
         """
         Add a new vehicle to the charger.
-
-        Returns
-        -------
-        maximum power for each power outlet.
         """
         self.num_users += 1
-        if self.num_users == self.num_sockets:
+        self.accessible_power -= used_power
+        if self.accessible_power == 0 or self.num_users == self.num_sockets:
             self.available = False
 
-    def remove_vehicle(self):
+    def remove_vehicle(self, freed_power):
         """
         Remove a vehicle from the charger.
         """
         self.num_users -= 1
+        self.accessible_power += freed_power
         self.available = True
-

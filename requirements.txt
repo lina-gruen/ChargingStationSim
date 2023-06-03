@@ -1,0 +1,7 @@
+pandas
+matplotlib
+numpy
+mesa
+random
+time
+math

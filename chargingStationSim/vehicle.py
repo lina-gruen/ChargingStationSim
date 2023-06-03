@@ -1,176 +1,263 @@
 # -*- encoding: utf-8 -*-
 """
-The file contains the Vehicle class
+The file contains the Vehicle class.
 """
 
 __author__ = 'Lina Grünbeck / lina.grunbeck@gmail.com'
 
-from mesa import Agent
+from chargingStationSim.mesa_mod import Agent
 
 
 class Vehicle(Agent):
     """
-    Base class for all vehicles in a vehicle fleet.
+    Base class for all vehicles charging at a charging station.
     """
 
-    default_params = {'weight_class': None, 'dist_type': None, 'capacity': None, 'efficiency': None}
-
-    # resolution = 600  # 10min
-
-    def __init__(self, vehicle_id, station, params, soc):
-        super().__init__(vehicle_id, station)
+    def __init__(self, unique_id, station, random, arrival, capacity, max_charge, soc):
         """
         Parameters
         ----------
-        vehicle_id: int
-            Unique id for the vehicle.
+        unique_id: int
+            Id for the vehicle.
         station: mesa.model
             Instance of the station that contains the vehicle.
-        params: dict
-            New parameters for the vehicle.
-            Including:
-                weight_class: string
-                    If vehicle is medium-heavy or heavy
-                dist_type: string
-                    If the vehicle is for short-distance (local) or
-                    long-distance travel.
-                capacity: int
-                    Max kWh rating of the vehicle battery.
-                efficiency: int
-                    Efficiency of the battery measured in kWh/km.
-        soc: int
-            State of Charge of the vehicle battery.
+        random: numpy random generator instance
+
+        arrival: pandas timestamp
+            The arrival time of the vehicle at the station.
+        capacity: int
+            Max kWh rating of the vehicle battery.
+        max_charge: int
+            Maximum power at which the vehicle can charge in kW.
+        soc: float
+            State of Charge of the battery at initialization.
         """
-        self.id = vehicle_id
+        super().__init__(unique_id, station)
+
+        self.rand_generator = random
         self.station = station
-        self.time = station.time_step  # time per iteration step in minutes
-        self.weight_class = params['weight_class']
-        self.dist_type = params['dist_type']
-        self.capacity = params['capacity']
-        if params['efficiency'] is None:
-            self.efficiency = 5
-        else:
-            self.efficiency = params['efficiency']
+        # Time per iteration step in minutes.
+        self.resolution = station.resolution
+        # Set the battery capacity and maximum charging power for the vehicle.
+        self.capacity = capacity
+        self.max_charge = max_charge
+        # State of Charge of the vehicle battery in percentage.
         self.soc = soc
-        # kWh needed for the vehicle.
-        self.demand = 0
-        # if the vehicle is driving (True) or not (False).
-        self.driving = False
-        '''
+        # Arrival time at charging station.
+        self.arrival = arrival
+        # Default maximum steps that the vehicle charges.
+        self.charge_steps = self.get_charge_steps(mean=45, std=2)
+        # Counter for the amount of minutes the vehicle has to stand in line at the station.
+        self.wait_time = 0
+        # Wished charging power when searching for a charger.
+        self.target_power = None
+        # Wished end soc when charging.
+        self.target_soc = None
         # The power the vehicle is currently charging with.
         self.power = 0
-        '''
         # The charger the vehicle is using. None if not charging.
         self.charger = None
-        # If the vehicle is charging (True) or not (False).
-        self.charging = False
-        # self.wait_time = None
-        # self.max_pow = params['max_pow']
+        # Current state of the vehicle.
+        self.state = dict(charging=False, waiting=False, done=False, left=False)
+        # If the vehicle ever got to charge in the simulation.
+        self.no_charge = False
 
-    def get_soc(self):
+    def get_charge_steps(self, mean, std):
         """
-        Return the current SOC of the vehicle.
-        """
-        return self.soc
+        Finds the maximum amount of steps the vehicle wants to charge from a probability distribution.
 
-    def new_demand(self):
+        Returns
+        -------
+        Max steps available for charging.
         """
-        Calculate the new demand of kWh the vehicle needs for its next
-        trip, depending on the length of the new route.
-        """
-        route_len = 75
-        self.demand = route_len * self.efficiency
-        # self.driving = ...
-        '''
-        Må finne ut hvor mye demand tilsvarer driving til neste kjøretur.
-        '''
+        time = self.rand_generator.normal(loc=mean, scale=std)
+        steps = int(time / self.resolution)
+        return steps
 
-    def drive(self):
+    def update_charge_power(self):
         """
-
+        Updates the current charging power if charger has more available power since last step in
+        case another vehicle disconnected.
         """
-        speed = 60  # km/h
-        driving_demand = (self.efficiency * speed * self.time) / 60
-        new_soc = self.soc - (driving_demand / self.capacity) * 100
-        if new_soc <= 0:
-            self.soc = 0
-            self.driving = False
-        else:
-            self.soc = round(new_soc, 2)
+        if self.power < self.charger.accessible_power < self.target_power:
+            new_power = self.charger.accessible_power
+            self.charger.accessible_power -= (new_power - self.power)
+            self.power = new_power
+        elif self.charger.accessible_power >= self.target_power:
+            new_power = self.target_power
+            self.charger.accessible_power -= (new_power - self.power)
+            self.power = new_power
 
     def update_soc(self):
         """
-        Update the soc of the vehicle when charging.
+        Updates the soc of the vehicle when charging.
         """
-        '''
-        target soc for charging the total kWh demand (enten 100 eller utifra demand, utifra
-        om det er lokal eller langdistanse.)
-        # target_soc = self.soc + (self.demand / self.capacity) * 100
-        '''
-        # how many kWh can be charged per iteration step with current power.
-        step_demand = self.charger.socket_power * (self.time / 60)  # min/60=h
-        '''
-        Sjå om ein faktisk trenge å oppdatere iter_demand hver runde. if self.power == self.charger.socket_power: pass
-        '''
-        new_soc = self.soc + (step_demand / self.capacity) * 100
-        if new_soc >= 100:
-            self.soc = 100
-            self.charging = False
-            self.charger.remove_vehicle()
-            self.charger = None
-            self.driving = True
+        # Update charging power if charger has more available power since last step.
+        if self.power != self.target_power:
+            self.update_charge_power()
+        # How many kWh can be charged in the current step with the chosen power.
+        step_capacity = self.power * (self.resolution / 60)  # min/60=h
+        # Find new soc.
+        new_soc = self.soc + (step_capacity / self.capacity) * 100
+        self.charge_steps -= 1
+        if new_soc >= self.target_soc:
+            self.soc = self.target_soc
+            self.state['done'] = True
+        elif self.charge_steps == 0:
+            self.state['done'] = True
+            self.soc = round(new_soc, 2)
         else:
             self.soc = round(new_soc, 2)
 
+    def connect_charger(self, char_choice, pow_choice):
+        """
+        Connect the vehicle to the chosen charger and sets the charging power to the chosen level.
+
+        Parameters
+        ----------
+        char_choice: Instance of the Charger class
+            The chosen charger.
+        pow_choice: int
+            The chosen power.
+        """
+        if self.state['waiting']:
+            self.state['waiting'] = False
+        self.state['charging'] = True
+        self.charger = char_choice
+        self.power = pow_choice
+        self.charger.add_vehicle(self.power)
+
     def find_charger(self):
         """
-        Uses charger if one is free, else waits until next iteration to check again.
+        Finds charger that can deliver the requested power. If nothing is available the vehicle waits until next step.
         """
-        for charger in self.station.charge_list:
-            if charger.available:
-                self.charging = True
-                self.charger = charger
-                self.charger.add_vehicle()
-                self.new_demand()
-                break
-            else:
-                pass
+        # All charger that are available and the power they can deliver.
+        available = [(charger, charger.accessible_power) for charger in self.station.charge_list if charger.available]
+        if not available:
+            self.check_waiting()
+            return
+        # Find the charger for which the accessible power is closest to the target power of the vehicle.
+        charger = available[min(range(len(available)), key=lambda num: abs(available[num][1] - self.target_power))]
+        # If what's available is less or equal to the requested power we take all the available power:
+        if charger[1] <= self.target_power:
+            self.connect_charger(charger[0], charger[1])
+        # If the requested power is less than what's available we only take what was requested:
+        else:
+            self.connect_charger(charger[0], self.target_power)
 
     def check_vehicle(self):
         """
-        Check which action to take for a vehicle.
+        Checks which action to take for a vehicle.
         """
-        if self.charging:
+        if self.state['left']:
             pass
-        elif not self.driving:
+        elif self.state['charging']:
+            pass
+        elif self.state['waiting'] or self.arrival == self.station.step_time:
             self.find_charger()
         else:
-            self.drive()
+            pass
 
     def step_1(self):
         """
-        Vehicle actions to execute for the first stage of each iteration of a simulation.
+        Removes the vehicle from its charger if it finished charging in the previous step.
         """
-        self.check_vehicle()
+        if self.state['done']:
+            self.state['charging'] = False
+            self.charger.remove_vehicle(self.power)
+            self.charger = None
+            self.power = 0
+            self.state['done'] = False
+            self.state['left'] = True
 
     def step_2(self):
         """
-        Vehicle actions to execute for the second stage of each iteration of a simulation.
+        Finds out what action to take for the vehicle and charges if the vehicle is connected to a charger.
         """
-        # print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc}')
-
-        for charger in self.station.charge_list:
-            if charger.num_users != 0:
-                charger.update_power()
-        if self.charging:
+        self.check_vehicle()
+        if self.state['charging']:
             self.update_soc()
 
-        if self.charging:
-            print(f'Vehicle id: {self.id}, Charger id: {self.charger.id}, soc: {self.soc} '
-                  f'\n----------------------------------------')
-        elif self.driving:
-            print(f'Vehicle id: {self.id}, Driving: True, soc: {self.soc} '
-                  f'\n----------------------------------------')
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+class External(Vehicle):
+    """
+    Subclass for all external vehicles.
+    """
+
+    def __init__(self, unique_id, station, random, arrival, capacity, max_charge, soc, break_type):
+        super().__init__(unique_id, station, random, arrival, capacity, max_charge, soc)
+
+        self.type = 'External'
+        self.break_type = break_type
+
+        if self.break_type == 'ShortBreak':
+            self.target_soc = 80
+            # maximum steps that the vehicle has time to charge.
+            self.charge_steps = self.get_charge_steps(mean=35, std=1)
         else:
-            print(f'Vehicle id: {self.id}, Waiting: True, soc: {self.soc} '
-                  f'\n----------------------------------------')
+            self.target_soc = 100
+            self.charge_steps = self.get_charge_steps(mean=660, std=6)
+
+        target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
+                       (self.target_soc - self.soc)
+
+        if target_power >= self.max_charge:
+            self.target_power = self.max_charge
+        else:
+            self.target_power = target_power
+
+    def check_waiting(self):
+        if not self.state['waiting']:
+            self.state['waiting'] = True
+        self.charge_steps -= 1
+        self.wait_time += self.resolution
+        if self.break_type == 'ShortBreak' and self.wait_time >= 15 or \
+           self.break_type == 'LongBreak' and self.wait_time >= 180:
+            self.state['waiting'] = False
+            self.state['left'] = True
+            self.no_charge = True
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+class Internal(Vehicle):
+    """
+    Subclass for all internal vehicles.
+    """
+
+    def __init__(self, unique_id, station, random, arrival, capacity, max_charge, soc, break_type):
+        super().__init__(unique_id, station, random, arrival, capacity, max_charge, soc)
+
+        self.type = 'Internal'
+        self.break_type = break_type
+
+        if self.break_type == 'ShortBreak':
+            self.target_soc = 80
+            # maximum steps that the vehicle has time to charge.
+            self.charge_steps = self.get_charge_steps(mean=120, std=3)
+        elif self.break_type == 'MediumBreak':
+            self.target_soc = 100
+            self.charge_steps = self.get_charge_steps(mean=270, std=3)
+        else:
+            self.target_soc = 100
+            self.charge_steps = self.get_charge_steps(mean=630, std=3)
+
+        target_power = ((0.6 * self.capacity) / (self.resolution * self.charge_steps)) * \
+                       (self.target_soc - self.soc)
+
+        if target_power >= self.max_charge:
+            self.target_power = self.max_charge
+        else:
+            self.target_power = target_power
+
+    def check_waiting(self):
+        if not self.state['waiting']:
+            self.state['waiting'] = True
+        self.charge_steps -= 1
+        self.wait_time += self.resolution
+        if self.charge_steps == 0:
+            self.state['waiting'] = False
+            self.state['left'] = True
+            self.no_charge = True
