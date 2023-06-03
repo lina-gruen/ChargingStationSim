@@ -2,6 +2,8 @@
 Batchrunner
 ===========
 
+(This file has been modified from its original state under the Apache2 licence. All rights go to the Mesa Team.)
+
 A single class to manage a batch run or parameter sweep of a given model.
 """
 import copy
