@@ -592,12 +592,12 @@ if __name__ == '__main__':
     time_resolution = 2
     num_iter = 100
     runs = [0, 1, 2, 3, 4, 5]
+    batt_runs = {1: [42, 15], 3: [33], 5: [0, 15]}
+    flexibility = False
+    save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
     plot_station = True
     plot_vehicle = False
-    flexibility = False
     plot_battery = False
-    save_path = 'C:/Users/linag/OneDrive - Norwegian University of Life Sciences/Master/Plot'
-    batt_runs = {1: [42, 15], 3: [33], 5: [0, 15]}
 
     num_steps = int((24 / time_resolution) * 60) - 1
     set_plotstyle()
