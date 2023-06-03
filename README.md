@@ -17,8 +17,8 @@ visualization.py file by specifying which files and settings should be
 used.
 
 To model the agent-based nature of the charging station model a 
-modified version of the python package Mesa was used. These package files
-can be found together with the model in the mesa_mod folder. batchrunner.py 
+modified version of the python package Mesa was used. The package files
+can be found in the mesa_mod folder. batchrunner.py 
 is the only file that has been modified. Since the Mesa package is under
 the Apache2 license, the files in the folder are as well. All other packages
 that are needed to run the model can be found in the requirements file.
